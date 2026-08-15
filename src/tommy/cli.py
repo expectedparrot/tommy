@@ -474,7 +474,7 @@ def main(argv: list[str] | None = None) -> int:
             "next_steps": [],
         }
         code = 1
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - preserve the one-envelope CLI contract
         result = {
             "schema_version": 1,
             "status": "error",

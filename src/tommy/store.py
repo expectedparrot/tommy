@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +13,7 @@ DIRECTORIES = ("templates", "deals", "practices", "attempts", "scorecards")
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def slug(value: str) -> str:
@@ -56,7 +56,7 @@ class Store:
         self.base = self.root / ".tommy"
 
     @classmethod
-    def open(cls) -> "Store":
+    def open(cls) -> Store:
         return cls(find_root())
 
     def initialize(self, name: str) -> None:
