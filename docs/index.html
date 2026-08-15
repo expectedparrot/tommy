@@ -3,275 +3,352 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Set up, preview, and launch evidence-linked sales roleplays with Tommy and Expected Parrot.">
-  <title>Tommy — Sales roleplay that gets you ready</title>
+  <meta name="description" content="Build and launch a voice sales-practice interview with Tommy and Expected Parrot.">
+  <title>Tommy tutorial — a voice sales practice</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
   <style>
-    :root {
-      --ink: #20231f;
-      --muted: #666b64;
-      --cream: #f6f0e5;
-      --paper: #fffdf9;
-      --green: #537a43;
-      --green-dark: #36532d;
-      --gold: #d9ae55;
-      --brown: #766048;
-      --line: #ded7cb;
-      --code: #242722;
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; color: var(--ink); background: var(--paper); font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
-    a { color: var(--green-dark); }
-    .nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 14px max(24px, calc((100vw - 1180px) / 2)); border-bottom: 1px solid #ddd7ccdd; background: #fffdf9ee; backdrop-filter: blur(12px); }
-    .wordmark { color: var(--ink); text-decoration: none; font-weight: 900; font-size: 21px; letter-spacing: -.04em; }
-    .wordmark span { color: var(--green); }
-    .nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; font-weight: 700; }
-    .nav-links a { color: var(--muted); text-decoration: none; }
-    .nav-links .button { color: white; background: var(--green-dark); padding: 8px 13px; border-radius: 9px; }
-    .hero { overflow: hidden; background: var(--cream); border-bottom: 1px solid var(--line); }
-    .hero-inner { max-width: 1180px; margin: auto; min-height: 560px; display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; gap: 38px; padding: 64px 24px; }
-    .eyebrow { color: var(--green-dark); text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 850; }
-    h1 { margin: 12px 0 20px; max-width: 660px; font: 800 clamp(44px, 6vw, 75px)/.98 Georgia, serif; letter-spacing: -.05em; }
-    .lede { color: #4e534d; max-width: 600px; font-size: 19px; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
-    .hero-actions a { text-decoration: none; font-weight: 800; border-radius: 10px; padding: 12px 17px; }
-    .primary { color: white; background: var(--green-dark); }
-    .secondary { color: var(--green-dark); background: white; border: 1px solid var(--line); }
-    .art-frame { position: relative; min-height: 430px; }
-    .art-frame::before { content: ""; position: absolute; inset: 30px 0 0 30px; border: 2px solid var(--brown); border-radius: 28px; transform: rotate(2deg); }
-    .art-frame img { position: relative; width: 100%; height: 430px; object-fit: cover; object-position: 66% center; border: 1px solid var(--line); border-radius: 28px; background: white; box-shadow: 0 22px 55px #4a38271f; }
-    .model { max-width: 920px; margin: -27px auto 0; position: relative; display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: 0 10px 30px #40362213; }
-    .model span { padding: 15px 12px; text-align: center; font-weight: 800; font-size: 13px; border-right: 1px solid var(--line); }
-    .model span:last-child { border: 0; }
-    .model span:not(:last-child)::after { content: "→"; position: absolute; margin-left: 15px; color: var(--gold); }
-    main { max-width: 1060px; margin: auto; padding: 90px 24px 110px; }
-    section { scroll-margin-top: 90px; margin-bottom: 100px; }
-    .section-head { display: grid; grid-template-columns: 160px 1fr; gap: 28px; margin-bottom: 32px; }
-    .section-no { color: var(--green); font: 800 44px/1 Georgia, serif; }
-    h2 { margin: 0 0 12px; font: 800 clamp(30px, 4vw, 47px)/1.05 Georgia, serif; letter-spacing: -.035em; }
-    h3 { margin-top: 0; font-size: 18px; }
-    .section-head p { color: var(--muted); max-width: 720px; margin: 0; font-size: 17px; }
-    .callout { padding: 22px 24px; margin: 25px 0; border-left: 4px solid var(--gold); border-radius: 0 12px 12px 0; background: #fcf5e7; }
-    .callout strong { display: block; margin-bottom: 4px; }
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 17px; }
-    .card { padding: 23px; border: 1px solid var(--line); border-radius: 14px; background: white; }
-    .card p { color: var(--muted); margin-bottom: 0; }
-    .code { position: relative; margin: 20px 0; border-radius: 13px; overflow: hidden; background: var(--code); color: #f3f0e9; box-shadow: inset 0 0 0 1px #ffffff12; }
-    .code-label { display: flex; justify-content: space-between; padding: 9px 13px; border-bottom: 1px solid #ffffff16; color: #b9bdb5; font-size: 12px; font-weight: 750; }
-    pre { margin: 0; padding: 19px; overflow: auto; font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .copy { border: 0; border-radius: 6px; padding: 4px 8px; color: #dce4d8; background: #ffffff14; cursor: pointer; font: inherit; }
-    .artifact { display: grid; grid-template-columns: 150px 1fr; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-    .artifact code { color: var(--green-dark); font-weight: 800; }
-    .artifact p { margin: 0; color: var(--muted); }
-    .boundary { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .safe, .external { border-radius: 14px; padding: 23px; }
-    .safe { background: #eaf4e6; border: 1px solid #c9dec1; }
-    .external { background: #fff0dc; border: 1px solid #ecd2ae; }
-    .safe h3, .external h3 { display: flex; align-items: center; gap: 8px; }
-    .report-preview { display: grid; grid-template-columns: .9fr 1.1fr; min-height: 330px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px #392e2312; }
-    .fake-transcript { background: #f4f7f7; padding: 22px; }
-    .bubble { width: 85%; margin: 0 0 15px; padding: 13px; border-radius: 11px; background: #e2f0ef; font-size: 13px; }
-    .bubble.rep { margin-left: auto; background: white; border: 1px solid var(--line); }
-    .fake-feedback { padding: 24px; }
-    .score { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px; color: #7b4e00; background: #ffe8b7; font-weight: 900; font-size: 22px; }
-    .criterion { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; }
-    .criterion b { margin-left: auto; }
-    footer { padding: 40px 24px; text-align: center; color: var(--muted); border-top: 1px solid var(--line); background: var(--cream); }
-    @media (max-width: 820px) {
-      .hero-inner, .report-preview { grid-template-columns: 1fr; }
-      .hero-inner { padding-top: 45px; }
-      .art-frame, .art-frame img { min-height: 330px; height: 330px; }
-      .model { margin: 20px; grid-template-columns: repeat(3, 1fr); }
-      .section-head { grid-template-columns: 1fr; gap: 8px; }
-      .grid, .boundary { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 560px) {
-      .nav-links a:not(.button) { display: none; }
-      .model { grid-template-columns: repeat(2, 1fr); }
-      .model span::after { display: none; }
-      .artifact { grid-template-columns: 1fr; gap: 5px; }
-    }
+    :root { --ink:#202124; --muted:#62666d; --line:#d9dce1; --link:#1769aa; --paper:#fff; --code:#2d2d2d; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:17px/1.65 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(820px,calc(100% - 36px)); margin:0 auto; padding:54px 0 90px; }
+    header { display:grid; grid-template-columns:1fr 150px; gap:34px; align-items:center; border-bottom:1px solid var(--line); padding-bottom:30px; }
+    header img { width:150px; height:120px; object-fit:cover; object-position:55% 40%; }
+    h1,h2,h3 { line-height:1.2; letter-spacing:-.025em; }
+    h1 { margin:0 0 10px; font-size:2.7rem; }
+    h2 { margin:58px 0 14px; font-size:1.75rem; }
+    h3 { margin:34px 0 10px; font-size:1.2rem; }
+    p { margin:10px 0 18px; }
+    .lede { color:var(--muted); font-size:1.08rem; margin:0; }
+    a { color:var(--link); }
+    nav { border-bottom:1px solid var(--line); padding:20px 0; color:var(--muted); }
+    nav a { margin-right:18px; white-space:nowrap; }
+    code:not([class]) { background:#f1f2f4; border-radius:4px; padding:.12em .35em; font-size:.9em; }
+    pre[class*="language-"] { margin:14px 0 0; border-radius:7px; font-size:.86rem; line-height:1.55; overflow:auto; }
+    details { border-left:3px solid var(--line); padding:4px 0 4px 14px; margin:8px 0 24px; }
+    summary { color:var(--muted); cursor:pointer; font-size:.9rem; }
+    details pre[class*="language-"] { margin-top:10px; }
+    .note { border-left:3px solid var(--ink); padding-left:16px; }
+    footer { border-top:1px solid var(--line); margin-top:64px; padding-top:20px; color:var(--muted); font-size:.9rem; }
+    @media (max-width:600px) { header { grid-template-columns:1fr; } header img { display:none; } h1 { font-size:2.2rem; } nav a { display:inline-block; margin-bottom:5px; } }
   </style>
 </head>
-<body>
-  <nav class="nav">
-    <a class="wordmark" href="#top"><span>◆</span> tommy</a>
-    <div class="nav-links">
-      <a href="#concepts">Concepts</a>
-      <a href="#setup">Setup</a>
-      <a href="#launch">Launch</a>
-      <a href="#review">Review</a>
-      <a class="button" href="#quickstart">Quickstart</a>
+<body><main>
+  <header>
+    <div>
+      <h1>A pricing call with Jordan</h1>
+      <p class="lede">A worked Tommy tutorial: construct a voice AI buyer, practice the call, and turn the transcript into evidence-linked coaching.</p>
     </div>
-  </nav>
-
-  <header class="hero" id="top">
-    <div class="hero-inner">
-      <div>
-        <div class="eyebrow">Expected Parrot sales practice</div>
-        <h1>Practice the call before it counts.</h1>
-        <p class="lede">Tommy turns a reusable scenario and optional deal context into a realistic AI buyer, then connects every coaching recommendation to the transcript evidence behind it.</p>
-        <div class="hero-actions">
-          <a class="primary" href="#quickstart">Set up your first roleplay</a>
-          <a class="secondary" href="https://github.com/expectedparrot/tommy#copyable-agent-instructions">Agent instructions</a>
-        </div>
-      </div>
-      <div class="art-frame">
-        <img src="assets/tommy-artwork.png" alt="Tommy, a green parrot salesperson in a plaid suit">
-      </div>
-    </div>
+    <img src="assets/tommy-artwork.png" alt="Tommy, a green parrot salesperson in a plaid suit">
   </header>
 
-  <div class="model" aria-label="Tommy workflow">
-    <span>Template</span><span>Deal</span><span>Practice</span><span>Attempt</span><span>Review</span><span>Drill</span>
-  </div>
+  <nav aria-label="Tutorial sections">
+    <a href="#context">Context</a><a href="#buyer">Buyer</a><a href="#launch">Launch</a><a href="#review">Review</a><a href="#drill">Drill</a><a href="#json">JSON import</a>
+  </nav>
 
-  <main>
-    <section id="concepts">
-      <div class="section-head"><div class="section-no">01</div><div><h2>Keep behavior separate from facts.</h2><p>A template defines how a simulated buyer behaves. A deal contains what is actually known about an opportunity. A practice combines them without disguising assumptions as customer history.</p></div></div>
-      <div class="grid">
-        <article class="card"><h3>Reusable template</h3><p>Call type, buyer archetype, objection territory, difficulty, opening, success condition, and scorecard. Share it without exposing customer data.</p></article>
-        <article class="card"><h3>Optional deal</h3><p>Seller, prospect, stage, price, known objections, competitors, history, and next-meeting objective. Every fact retains its source.</p></article>
-        <article class="card"><h3>Immutable practice</h3><p>A versioned combination of template, optional deal, and explicit overrides. Build hashes make stale or changed inputs visible.</p></article>
-        <article class="card"><h3>Evidence-linked review</h3><p>Criterion scores, objections, explanations, alternatives, and confidence—all linked to valid transcript turn IDs.</p></article>
-      </div>
-    </section>
+  <section id="context">
+    <h2>The situation</h2>
+    <p>Alex Rivera sells Expected Parrot, an AI research platform. Tomorrow Alex will speak with Jordan Chen, Head of UX Research at Acme. Jordan has seen a demo, leads a six-person team, and is interested—but is skeptical about simulated-research validity and whether a $15,000 monthly contract can be approved.</p>
+    <p>We want Alex to practice aloud with a voice interview AI that plays Jordan. The buyer should press on validity and budget, but remain open to a technical follow-up if Alex asks useful questions and earns it. Afterward, we want a transcript-grounded score and a shorter drill aimed at the weakest part of the call.</p>
+    <p>Tommy separates three things: the scoring standard, reusable buyer behavior, and facts about this deal. We will construct each explicitly.</p>
 
-    <section id="setup">
-      <div class="section-head"><div class="section-no">02</div><div><h2>Install and initialize.</h2><p>Tommy emits one JSON envelope per command, so both agents and shell workflows can inspect state without scraping terminal decoration.</p></div></div>
-      <div class="code" id="quickstart"><div class="code-label"><span>Shell · installation</span><button class="copy">Copy</button></div><pre>pip install -e '.[edsl]'
-tommy init demo --name "Sales practice"
-cd demo
-tommy guide
-tommy next</pre></div>
-      <div class="callout"><strong>Agent-first by design</strong>A human can use every command directly, but the intended experience is to tell an agent what call you need to prepare for. The agent turns notes into small, inspectable artifacts and explains consequential assumptions.</div>
+    <h3>Start a project</h3>
+    <pre><code class="language-bash">tommy init ep-practice --name "Expected Parrot enterprise practice"
+cd ep-practice</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "schema_version": 1,
+  "status": "ok",
+  "command": "tommy init",
+  "data": {
+    "project": "/work/ep-practice",
+    "marker": "/work/ep-practice/tommy.json"
+  },
+  "warnings": [], "errors": [], "next_steps": ["cd /work/ep-practice", "tommy guide"]
+}</code></pre></details>
+  </section>
 
-      <h3>Add the reusable scorecard and template</h3>
-      <div class="code"><div class="code-label"><span>Shell · reusable inputs</span><button class="copy">Copy</button></div><pre>tommy scorecard add ../examples/enterprise-pricing/scorecard.json
-tommy template add ../examples/enterprise-pricing/template.json</pre></div>
+  <section id="buyer">
+    <h2>Define what good looks like</h2>
+    <p>A scorecard is independent of any one buyer. Here we make one group and two criteria. Add more criteria the same way when they matter.</p>
+    <pre><code class="language-bash">tommy scorecard create --id enterprise-call --name "Enterprise sales call"
 
-      <h3>Optionally attach a real deal</h3>
-      <div class="code"><div class="code-label"><span>Shell · deal-specific context</span><button class="copy">Copy</button></div><pre>tommy deal add ../examples/enterprise-pricing/deal.json
+tommy scorecard add-group \
+  --scorecard enterprise-call \
+  --id conversation \
+  --name "Conversation"
 
-tommy practice prepare \
-  --template enterprise-pricing \
+tommy scorecard add-criterion \
+  --scorecard enterprise-call \
+  --group conversation \
+  --id discovery \
+  --name "Discovery" \
+  --description "Asks useful questions before proposing a solution." \
+  --max-score 2
+
+tommy scorecard add-criterion \
+  --scorecard enterprise-call \
+  --group conversation \
+  --id close \
+  --name "Next step" \
+  --description "Earns and clearly confirms a bounded next step." \
+  --max-score 2</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy scorecard create",
+  "data": {"id": "enterprise-call", "name": "Enterprise sales call", "groups": []}
+}
+{
+  "status": "ok",
+  "command": "tommy scorecard add-criterion",
+  "data": {"scorecard_id": "enterprise-call", "group_id": "conversation", "criterion_id": "close"}
+}</code></pre></details>
+
+    <h2>Construct the reusable voice buyer</h2>
+    <p>The template says how the simulated buyer behaves. It does not claim that Jordan will actually behave this way. The default mode is voice; we state it here because it is central to this practice.</p>
+    <pre><code class="language-bash">tommy template create \
+  --id skeptical-research-leader \
+  --name "Skeptical research leader" \
+  --call-type "Pricing follow-up" \
+  --scorecard enterprise-call \
+  --buyer-name "Jordan Chen" \
+  --buyer-role "Head of UX Research" \
+  --buyer-behavior "Direct and skeptical, but candid when the seller asks specific questions." \
+  --success-condition "Offer a 30-minute technical validation session if the seller earns it." \
+  --mode voice \
+  --duration-minutes 12 \
+  --difficulty tough_but_winnable \
+  --opening mid_conversation</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "schema_version": 1,
+  "status": "ok",
+  "command": "tommy template create",
+  "data": {
+    "id": "skeptical-research-leader",
+    "mode": "voice",
+    "duration_minutes": 12,
+    "difficulty": "tough_but_winnable",
+    "objections": []
+  },
+  "warnings": [], "errors": [], "next_steps": []
+}</code></pre></details>
+
+    <p>Now give that buyer objection territory. The prompt tells the AI what concern to raise; the optional follow-up prevents a superficial answer from resolving it.</p>
+    <pre><code class="language-bash">tommy template add-objection \
+  --template skeptical-research-leader \
+  --name "Validity" \
+  --prompt "How can simulated respondents support decisions about real customers?" \
+  --follow-up "Ask what evidence would make the seller trust the method."
+
+tommy template add-objection \
+  --template skeptical-research-leader \
+  --name "Budget" \
+  --prompt "Why should I spend this much before the team has validated it?"</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy template add-objection",
+  "data": {"template_id": "skeptical-research-leader", "objection_count": 2}
+}</code></pre></details>
+
+    <h2>Add only the known deal facts</h2>
+    <p>The deal is the actual opportunity context supplied to Tommy. Keeping it separate means a useful reusable persona does not silently become CRM history.</p>
+    <pre><code class="language-bash">tommy deal create \
+  --id acme-research \
+  --name "Acme research platform evaluation" \
+  --seller-company "Expected Parrot" \
+  --offering "AI-assisted research platform" \
+  --price '$15,000 per month' \
+  --prospect-company "Acme" \
+  --industry "Software" \
+  --buyer-name "Jordan Chen" \
+  --buyer-role "Head of UX Research" \
+  --stage evaluation \
+  --objective "Earn a technical validation session" \
+  --history "Jordan saw a demo and leads a six-person research team."
+
+tommy deal add-objection \
   --deal acme-research \
-  --id jordan-pricing</pre></div>
-      <p>For generic training, omit <code>--deal</code>. You can still override the buyer role, mode, difficulty, duration, opening, or focus for one practice.</p>
-      <div class="code"><div class="code-label"><span>Shell · generic practice</span><button class="copy">Copy</button></div><pre>tommy practice prepare \
-  --template enterprise-pricing \
-  --id generic-cfo-pricing \
-  --buyer-role "Chief Financial Officer" \
-  --focus budget-math \
-  --mode voice</pre></div>
-    </section>
+  --text "Budget has not been approved."</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy deal create",
+  "data": {"id": "acme-research", "prospect": {"company": "Acme", "buyer_name": "Jordan Chen"}}
+}
+{
+  "status": "ok",
+  "command": "tommy deal add-objection",
+  "data": {"deal_id": "acme-research", "objection_count": 1}
+}</code></pre></details>
+  </section>
 
-    <section id="launch">
-      <div class="section-head"><div class="section-no">03</div><div><h2>Build, inspect, and launch.</h2><p>Building creates a native EDSL Survey and buyer guide. Previewing is read-only. Launching is a deliberate external action that creates a private Expected Parrot respondent study.</p></div></div>
-      <div class="code"><div class="code-label"><span>Shell · build and preview</span><button class="copy">Copy</button></div><pre>tommy practice build --practice jordan-pricing
-tommy practice preview --practice jordan-pricing</pre></div>
-      <div class="boundary">
-        <div class="safe"><h3>✓ Safe inspection</h3><p><code>practice build</code> creates local artifacts. <code>practice preview</code> returns a preview URL without creating a respondent study.</p></div>
-        <div class="external"><h3>⚡ External boundary</h3><p>Review the buyer, opening, pressure points, and win condition first. Deployment requires an explicit confirmation flag.</p></div>
-      </div>
-      <div class="code"><div class="code-label"><span>Shell · launch after approval</span><button class="copy">Copy</button></div><pre>tommy practice deploy \
+  <section id="launch">
+    <h2>Prepare, inspect, and launch</h2>
+    <p>Preparing freezes the selected template, deal, scorecard, and settings into a versioned practice. Building exports the buyer guide, manifest, and native EDSL survey to a named directory under the current working directory. Expected Parrot never needs to read Tommy’s private <code>.tommy</code> state.</p>
+    <pre><code class="language-bash">tommy practice prepare \
+  --template skeptical-research-leader \
+  --deal acme-research \
+  --id jordan-pricing
+
+tommy practice build \
   --practice jordan-pricing \
-  --confirm</pre></div>
-      <p>The resulting JSON contains the private respondent URL and deployment record. Share the URL with the rep completing the roleplay.</p>
-    </section>
+  --output-dir runs/jordan-pricing</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy practice build",
+  "data": {
+    "practice_id": "jordan-pricing",
+    "output_dir": "/work/ep-practice/runs/jordan-pricing",
+    "guide": "/work/ep-practice/runs/jordan-pricing/buyer-guide.md",
+    "survey": "/work/ep-practice/runs/jordan-pricing/survey.ep"
+  }
+}</code></pre></details>
 
-    <section id="attempt">
-      <div class="section-head"><div class="section-no">04</div><div><h2>Preserve every attempt.</h2><p>Each completed call becomes a distinct attempt. Earlier transcripts and reviews are never silently overwritten, making improvement across repeated practice measurable.</p></div></div>
-      <div class="code"><div class="code-label"><span>Shell · fetch EP response</span><button class="copy">Copy</button></div><pre>tommy attempt fetch \
+    <p>Preview is read-only. It lets you verify the voice experience before creating a live respondent study.</p>
+    <pre><code class="language-bash">tommy practice preview --practice jordan-pricing</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy practice preview",
+  "data": {"practice_id": "jordan-pricing", "preview_url": "https://…", "external_state_created": false}
+}</code></pre></details>
+
+    <p class="note">Deployment creates a private Expected Parrot respondent study. Run it only after the preview is acceptable.</p>
+    <pre><code class="language-bash">tommy practice deploy --practice jordan-pricing --confirm</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy practice deploy",
+  "data": {"practice_id": "jordan-pricing", "uuid": "&lt;human-survey-uuid&gt;", "respondent_url": "https://…"}
+}</code></pre></details>
+
+    <p>Alex opens the respondent URL and has the voice conversation. When it is complete, fetch that response as a distinct attempt. The native response export is visible in the named run directory.</p>
+    <pre><code class="language-bash">tommy attempt fetch \
   --practice jordan-pricing \
   --uuid &lt;human-survey-uuid&gt; \
   --rep "Alex Rivera" \
   --buyer "Jordan Chen" \
-  --id alex-round-1</pre></div>
-      <p>You can also register an exported text or JSON transcript:</p>
-      <div class="code"><div class="code-label"><span>Shell · import transcript</span><button class="copy">Copy</button></div><pre>tommy attempt import \
+  --id alex-round-1 \
+  --output-dir runs/alex-round-1</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy attempt fetch",
+  "data": {
+    "id": "alex-round-1",
+    "turn_count": 18,
+    "responses": "/work/ep-practice/runs/alex-round-1/responses.ep"
+  }
+}</code></pre></details>
+
+    <p>If the transcript came from another recorder, import it instead. Text and JSON transcripts are accepted; importing does not call an external service.</p>
+    <pre><code class="language-bash">tommy attempt import \
   --practice jordan-pricing \
   --transcript transcript.json \
   --rep "Alex Rivera" \
-  --id alex-round-1</pre></div>
-      <div class="artifact"><code>attempt.json</code><p>Rep, buyer, practice hash, provenance, status, and normalized timestamped turns.</p></div>
-      <div class="artifact"><code>review.json</code><p>Canonical structured evaluation with criterion scores and validated transcript evidence.</p></div>
-      <div class="artifact"><code>report.html</code><p>Portable coaching view generated from the attempt and review; it is not the source of truth.</p></div>
-    </section>
+  --buyer "Jordan Chen" \
+  --id alex-round-1</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy attempt import",
+  "data": {"id": "alex-round-1", "practice_id": "jordan-pricing", "turn_count": 18}
+}</code></pre></details>
+  </section>
 
-    <section id="review">
-      <div class="section-head"><div class="section-no">05</div><div><h2>Review the evidence, not just the score.</h2><p>Tommy rejects missing criteria, out-of-range scores, and evidence citations pointing to nonexistent turns. The report makes the chain from observation to interpretation to suggestion visible.</p></div></div>
-      <div class="report-preview" aria-label="Illustration of a Tommy report">
-        <div class="fake-transcript">
-          <div class="bubble">Jordan · Walk me through how this price pays for itself.</div>
-          <div class="bubble rep">Alex · It helps teams make better decisions much faster.</div>
-          <div class="bubble">Jordan · That is a principle, not budget math.</div>
-          <div class="bubble rep">Alex · Which part of your research queue causes the most delay?</div>
-        </div>
-        <div class="fake-feedback">
-          <div class="score">80</div>
-          <h3>Evidence-linked coaching</h3>
-          <p>Lead with the buyer's operational constraint instead of an abstract promise. The discovery recovery was strong; the close still needed an owned follow-up date.</p>
-          <div class="criterion"><span>●</span> Discovery <b>3/3</b></div>
-          <div class="criterion"><span>●</span> Objection handling <b>3/3</b></div>
-          <div class="criterion"><span>●</span> Concrete next step <b>1/2</b></div>
-        </div>
-      </div>
-      <div class="code"><div class="code-label"><span>Shell · prepare, run, register, and render</span><button class="copy">Copy</button></div><pre>tommy review prepare \
+  <section id="review">
+    <h2>Evaluate the transcript</h2>
+    <p>Review preparation creates native EDSL Jobs but does not run a model. The returned <code>ep run</code> command is the explicit inference boundary. Both Jobs and Results live in the run directory—not in <code>.tommy</code>.</p>
+    <pre><code class="language-bash">tommy review prepare \
   --attempt alex-round-1 \
-  --model gpt-5.4-mini
+  --model gpt-5.4-mini \
+  --output-dir runs/alex-round-1</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy review prepare",
+  "data": {
+    "attempt_id": "alex-round-1",
+    "jobs": "/work/ep-practice/runs/alex-round-1/review.jobs.ep",
+    "expected_results": "/work/ep-practice/runs/alex-round-1/review.results.ep",
+    "estimated_model_calls": 1
+  }
+}</code></pre></details>
 
-ep run \
-  --jobs .tommy/attempts/alex-round-1/review.jobs.ep \
-  --output .tommy/attempts/alex-round-1/review.results.ep
+    <pre><code class="language-bash">ep run \
+  --jobs runs/alex-round-1/review.jobs.ep \
+  --output runs/alex-round-1/review.results.ep</code></pre>
+    <details><summary>Show representative JSON output</summary><pre><code class="language-json">{
+  "status": "completed",
+  "output": "runs/alex-round-1/review.results.ep"
+}</code></pre></details>
 
-tommy review register \
+    <p>Register validates the review against the scorecard and verifies that every evidence reference points to a real transcript turn. Then render the standalone HTML coaching report.</p>
+    <pre><code class="language-bash">tommy review register \
   --attempt alex-round-1 \
-  --results .tommy/attempts/alex-round-1/review.results.ep
+  --results runs/alex-round-1/review.results.ep
 
-tommy report --attempt alex-round-1</pre></div>
-      <div class="callout"><strong>What the HTML report contains</strong>Buyer and seller transcript styling, overall and grouped scores, strengths, recommendations, expandable criteria, objection resolution, evaluator confidence, and links that scroll to and highlight exact transcript turns.</div>
-      <h3>Turn the weakest criterion into the next drill</h3>
-      <div class="code"><div class="code-label"><span>Shell · targeted improvement loop</span><button class="copy">Copy</button></div><pre>tommy drill prepare \
+tommy report \
   --attempt alex-round-1 \
+  --output-dir runs/alex-round-1</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy report",
+  "data": {
+    "attempt_id": "alex-round-1",
+    "report": "/work/ep-practice/runs/alex-round-1/report.html",
+    "score": 63,
+    "standalone": true
+  }
+}</code></pre></details>
+  </section>
+
+  <section id="drill">
+    <h2>Practice the weakest moment again</h2>
+    <p>Suppose “Next step” was the weakest criterion. Tommy can derive a five-minute practice from the reviewed attempt while preserving its provenance. Build it into a new named directory and preview it before deployment.</p>
+    <pre><code class="language-bash">tommy drill prepare \
+  --attempt alex-round-1 \
+  --criterion close \
   --id alex-closing-drill
 
-tommy practice build --practice alex-closing-drill
+tommy practice build \
+  --practice alex-closing-drill \
+  --output-dir runs/alex-closing-drill
 
-tommy compare \
-  --attempt alex-round-1 \
-  --attempt alex-round-2</pre></div>
-    </section>
+tommy practice preview --practice alex-closing-drill</code></pre>
+    <details><summary>Show JSON responses</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy drill prepare",
+  "data": {
+    "id": "alex-closing-drill",
+    "kind": "targeted_drill",
+    "parent_attempt_id": "alex-round-1",
+    "target_criterion_id": "close"
+  }
+}</code></pre></details>
 
-    <section id="agent">
-      <div class="section-head"><div class="section-no">06</div><div><h2>Let the agent manage the machinery.</h2><p>The agent should ask what conversation you need to prepare for, normalize your notes, reuse suitable templates, surface its assumptions, and stop for approval before deployment.</p></div></div>
-      <div class="code"><div class="code-label"><span>Prompt · minimal starting point</span><button class="copy">Copy</button></div><pre>You are operating Tommy. Run `tommy guide` and `tommy next`, inspect existing
-artifacts, and help me prepare for this sales conversation:
+    <p>After a second reviewed attempt, compare both rounds criterion by criterion.</p>
+    <pre><code class="language-bash">tommy compare --attempt alex-round-1 --attempt alex-round-2</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy compare",
+  "data": {"attempt_ids": ["alex-round-1", "alex-round-2"], "overall_change": 18}
+}</code></pre></details>
+  </section>
 
-[paste deal notes or describe the generic skill to practice]
-
-Keep supplied facts separate from inference. Prepare one focused practice,
-show me the buyer design before deployment, and do not cross an external
-boundary without my approval. After the attempt, ground every review claim
-in valid transcript turn IDs and generate the standalone HTML report.</pre></div>
-      <p>For the complete copyable operating contract, see the <a href="https://github.com/expectedparrot/tommy#copyable-agent-instructions">agent instructions in the README</a>.</p>
-    </section>
-  </main>
+  <section id="json">
+    <h2>When JSON is the better interface</h2>
+    <p>The keyword commands make construction legible and are useful when an agent is learning the domain with you. Tommy also keeps bulk JSON ingestion for definitions you already maintain, or when an agent should minimize tool calls. These commands produce the same canonical components:</p>
+    <pre><code class="language-bash">tommy scorecard add scorecard.json
+tommy template add template.json
+tommy deal add deal.json</code></pre>
+    <details><summary>Show JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy template add",
+  "data": {"id": "skeptical-research-leader", "path": "/work/ep-practice/.tommy/templates/skeptical-research-leader.json"}
+}</code></pre></details>
+    <p>The hidden path above is Tommy’s canonical project state. It is not an export path and is never passed to <code>ep run</code>. Runnable artifacts always go to the explicit <code>--output-dir</code> you chose.</p>
+  </section>
 
   <footer>
-    <strong>Tommy</strong> · Practice evidence, not predictions about real buyers.<br>
-    Built on Expected Parrot and EDSL.
+    Tommy is an MIT-licensed Expected Parrot project. See the <a href="https://github.com/expectedparrot/tommy">repository</a> or copy the <a href="https://github.com/expectedparrot/tommy#copyable-agent-instructions">agent instructions</a>.
   </footer>
-  <script>
-    document.querySelectorAll('.copy').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const text = button.closest('.code').querySelector('pre').innerText;
-        await navigator.clipboard.writeText(text);
-        const original = button.textContent;
-        button.textContent = 'Copied';
-        setTimeout(() => button.textContent = original, 1200);
-      });
-    });
-  </script>
-</body>
-</html>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+</body></html>

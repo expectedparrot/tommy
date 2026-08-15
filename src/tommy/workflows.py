@@ -10,6 +10,150 @@ from .schemas import validate_deal, validate_review, validate_scorecard, validat
 from .store import Store, digest, now, slug, write_json
 
 
+def create_scorecard(store: Store, identifier: str, name: str) -> dict[str, Any]:
+    record = {"schema_version": 1, "id": slug(identifier), "name": name, "groups": [], "created_at": now()}
+    path = store.add("scorecards", identifier, record)
+    return {**record, "path": str(path)}
+
+
+def add_scorecard_group(store: Store, scorecard_id: str, identifier: str, name: str) -> dict[str, Any]:
+    scorecard = store.get("scorecards", scorecard_id)
+    group_id = slug(identifier)
+    if any(group["id"] == group_id for group in scorecard["groups"]):
+        raise TommyError("already_exists", f"Scorecard group `{group_id}` already exists.")
+    scorecard["groups"].append({"id": group_id, "name": name, "criteria": []})
+    write_json(store.path("scorecards", scorecard_id), scorecard)
+    return {"scorecard_id": scorecard["id"], "group_id": group_id, "group_count": len(scorecard["groups"])}
+
+
+def add_scorecard_criterion(
+    store: Store,
+    scorecard_id: str,
+    group_id: str,
+    identifier: str,
+    name: str,
+    description: str,
+    max_score: int,
+) -> dict[str, Any]:
+    scorecard = store.get("scorecards", scorecard_id)
+    group = next((item for item in scorecard["groups"] if item["id"] == slug(group_id)), None)
+    if not group:
+        raise TommyError("group_not_found", f"Unknown scorecard group: {group_id}")
+    criterion_id = slug(identifier)
+    if any(c["id"] == criterion_id for g in scorecard["groups"] for c in g["criteria"]):
+        raise TommyError("already_exists", f"Scorecard criterion `{criterion_id}` already exists.")
+    group["criteria"].append(
+        {"id": criterion_id, "name": name, "description": description, "max_score": max_score}
+    )
+    write_json(store.path("scorecards", scorecard_id), scorecard)
+    return {
+        "scorecard_id": scorecard["id"],
+        "group_id": group["id"],
+        "criterion_id": criterion_id,
+        "criterion_count": len(group["criteria"]),
+    }
+
+
+def create_template(
+    store: Store,
+    identifier: str,
+    name: str,
+    call_type: str,
+    scorecard: str,
+    buyer_name: str,
+    buyer_role: str,
+    buyer_behavior: str,
+    success_condition: str,
+    mode: str,
+    duration_minutes: int,
+    difficulty: str,
+    opening: str,
+) -> dict[str, Any]:
+    scorecard_record = store.get("scorecards", scorecard)
+    validate_scorecard(scorecard_record)
+    record = {
+        "schema_version": 1,
+        "id": slug(identifier),
+        "name": name,
+        "call_type": call_type,
+        "scorecard": scorecard_record["id"],
+        "buyer": {"name": buyer_name, "role": buyer_role, "behavior": buyer_behavior},
+        "success_condition": success_condition,
+        "objections": [],
+        "mode": mode,
+        "duration_minutes": duration_minutes,
+        "difficulty": difficulty,
+        "opening": opening,
+        "focus": [],
+        "created_at": now(),
+    }
+    path = store.add("templates", identifier, record)
+    return {**record, "path": str(path)}
+
+
+def add_template_objection(
+    store: Store, template_id: str, name: str, prompt: str, follow_up: str | None
+) -> dict[str, Any]:
+    template = store.get("templates", template_id)
+    objection = {"name": name, "prompt": prompt}
+    if follow_up:
+        objection["follow_up"] = follow_up
+    template["objections"].append(objection)
+    write_json(store.path("templates", template_id), template)
+    return {
+        "template_id": template["id"],
+        "objection_count": len(template["objections"]),
+        "objection": objection,
+    }
+
+
+def create_deal(
+    store: Store,
+    identifier: str,
+    name: str,
+    seller_company: str,
+    offering: str,
+    price: str | None,
+    prospect_company: str,
+    industry: str | None,
+    buyer_name: str | None,
+    buyer_role: str | None,
+    stage: str,
+    objective: str,
+    history: str | None,
+) -> dict[str, Any]:
+    seller = {"company": seller_company, "offering": offering}
+    if price:
+        seller["price"] = price
+    prospect = {"company": prospect_company}
+    for key, value in (("industry", industry), ("buyer_name", buyer_name), ("buyer_role", buyer_role)):
+        if value:
+            prospect[key] = value
+    deal = {"stage": stage, "objective": objective, "known_objections": []}
+    if history:
+        deal["history"] = history
+    record = {
+        "schema_version": 1,
+        "id": slug(identifier),
+        "name": name,
+        "seller": seller,
+        "prospect": prospect,
+        "deal": deal,
+        "created_at": now(),
+    }
+    path = store.add("deals", identifier, record)
+    return {**record, "path": str(path)}
+
+
+def add_deal_objection(store: Store, deal_id: str, text: str) -> dict[str, Any]:
+    record = store.get("deals", deal_id)
+    objections = record["deal"].setdefault("known_objections", [])
+    if text not in objections:
+        objections.append(text)
+    write_json(store.path("deals", deal_id), record)
+    return {"deal_id": record["id"], "objection_count": len(objections), "objection": text}
+
+
 def import_artifact(store: Store, kind: str, source: Path, identifier: str | None = None) -> dict[str, Any]:
     try:
         value = json.loads(source.read_text(encoding="utf-8"))
@@ -126,7 +270,7 @@ End naturally. If the success condition was earned, offer that bounded next step
 """
 
 
-def build_practice(store: Store, practice_id: str) -> dict[str, Any]:
+def build_practice(store: Store, practice_id: str, output_dir: Path) -> dict[str, Any]:
     practice = store.get("practices", practice_id)
     template = store.get("templates", practice["template_id"])
     deal = store.get("deals", practice["deal_id"]) if practice.get("deal_id") else None
@@ -144,10 +288,8 @@ def build_practice(store: Store, practice_id: str) -> dict[str, Any]:
             f"Practice inputs changed after preparation: {', '.join(stale)}.",
             hint="Prepare a new practice so the changed inputs receive new provenance hashes.",
         )
-    base = store.base / "practices" / practice["id"]
-    base.mkdir(parents=True, exist_ok=True)
     guide = render_buyer_guide(template, deal, practice)
-    guide_path = base / "buyer-guide.md"
+    guide_path = output_dir / "buyer-guide.md"
     guide_path.write_text(guide, encoding="utf-8")
     manifest = {
         "practice_id": practice["id"],
@@ -155,8 +297,10 @@ def build_practice(store: Store, practice_id: str) -> dict[str, Any]:
         "guide": str(guide_path),
         "guide_sha256": digest(guide),
         "practice_sha256": digest(practice),
+        "output_dir": str(output_dir),
     }
-    write_json(base / "build.json", manifest)
+    write_json(output_dir / "practice-manifest.json", manifest)
+    write_json(store.base / "practices" / practice["id"] / "build.json", manifest)
     return manifest
 
 

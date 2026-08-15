@@ -50,6 +50,24 @@ def find_root(start: Path | None = None) -> Path:
     raise TommyError("project_not_found", "No Tommy project found.", hint="Run `tommy init PATH`.")
 
 
+def resolve_output_dir(value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute() or not value.strip() or ".." in path.parts:
+        raise TommyError(
+            "invalid_output_dir",
+            "Output directory must be a named path beneath the current working directory.",
+        )
+    current = Path.cwd().resolve()
+    target = (current / path).resolve()
+    if target == current or not target.is_relative_to(current):
+        raise TommyError(
+            "invalid_output_dir",
+            "Export into a named output directory beneath the current working directory.",
+        )
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
 class Store:
     def __init__(self, root: Path) -> None:
         self.root = root.resolve()

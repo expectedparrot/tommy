@@ -72,7 +72,7 @@ def test_deal_specific_attempt_review_and_report(tmp_path: Path, monkeypatch, ca
 
     assert main(["review", "register", "--attempt", "round-1", "--file", str(EXAMPLE / "review.json")]) == 0
     assert output(capsys)["data"]["evidence_references"] == 6
-    assert main(["report", "--attempt", "round-1"]) == 0
+    assert main(["report", "--attempt", "round-1", "--output-dir", "runs/round-1"]) == 0
     report = Path(output(capsys)["data"]["report"])
     html = report.read_text()
     assert "Recommendations from Tommy" in html
@@ -80,7 +80,7 @@ def test_deal_specific_attempt_review_and_report(tmp_path: Path, monkeypatch, ca
     assert "Scorecard" in html and "Objections" in html
     assert 'class="transcript-search"' in html
     assert "http://" not in html and "https://" not in html
-    assert report == project / ".tommy/attempts/round-1/report.html"
+    assert report == project / "runs/round-1/report.html"
 
 
 def test_generic_practice_needs_no_deal(tmp_path: Path, monkeypatch, capsys) -> None:
@@ -262,5 +262,111 @@ def test_build_refuses_changed_inputs(tmp_path: Path, monkeypatch, capsys) -> No
     template = json.loads(template_path.read_text())
     template["buyer"]["behavior"] = "Changed after preparation"
     template_path.write_text(json.dumps(template))
-    assert main(["practice", "build", "--practice", "practice"]) == 1
+    assert main(["practice", "build", "--practice", "practice", "--output-dir", "runs/practice"]) == 1
     assert output(capsys)["errors"][0]["code"] == "stale_practice"
+
+
+def test_components_can_be_built_from_keywords(tmp_path: Path, monkeypatch, capsys) -> None:
+    project = tmp_path / "project"
+    main(["init", str(project)])
+    output(capsys)
+    monkeypatch.chdir(project)
+    commands = [
+        ["scorecard", "create", "--id", "core", "--name", "Core call"],
+        ["scorecard", "add-group", "--scorecard", "core", "--id", "discovery", "--name", "Discovery"],
+        [
+            "scorecard",
+            "add-criterion",
+            "--scorecard",
+            "core",
+            "--group",
+            "discovery",
+            "--id",
+            "questions",
+            "--name",
+            "Useful questions",
+            "--description",
+            "Learns what matters to the buyer",
+            "--max-score",
+            "2",
+        ],
+        [
+            "template",
+            "create",
+            "--id",
+            "pricing",
+            "--name",
+            "Pricing conversation",
+            "--call-type",
+            "Discovery",
+            "--scorecard",
+            "core",
+            "--buyer-name",
+            "Jordan Chen",
+            "--buyer-role",
+            "Head of Research",
+            "--buyer-behavior",
+            "Skeptical but candid",
+            "--success-condition",
+            "Agree to a technical follow-up",
+        ],
+        [
+            "template",
+            "add-objection",
+            "--template",
+            "pricing",
+            "--name",
+            "Validity",
+            "--prompt",
+            "How do I know simulated respondents are valid?",
+        ],
+        [
+            "deal",
+            "create",
+            "--id",
+            "acme",
+            "--name",
+            "Acme research",
+            "--seller-company",
+            "Expected Parrot",
+            "--offering",
+            "AI research",
+            "--prospect-company",
+            "Acme",
+            "--stage",
+            "evaluation",
+            "--objective",
+            "Earn a technical follow-up",
+        ],
+        ["deal", "add-objection", "--deal", "acme", "--text", "The budget is not approved"],
+    ]
+    for command in commands:
+        assert main(command) == 0
+        output(capsys)
+    assert main(["practice", "prepare", "--template", "pricing", "--deal", "acme", "--id", "call"]) == 0
+    assert output(capsys)["data"]["scorecard_id"] == "core"
+
+
+def test_output_directory_must_be_named_beneath_cwd(tmp_path: Path, monkeypatch, capsys) -> None:
+    setup_project(tmp_path, monkeypatch, capsys, with_deal=False)
+    main(["practice", "prepare", "--template", "enterprise-pricing", "--id", "practice"])
+    output(capsys)
+    assert main(["practice", "build", "--practice", "practice", "--output-dir", "../outside"]) == 1
+    assert output(capsys)["errors"][0]["code"] == "invalid_output_dir"
+
+
+def test_build_exports_runnable_artifacts_outside_private_state(tmp_path: Path, monkeypatch, capsys) -> None:
+    project = setup_project(tmp_path, monkeypatch, capsys, with_deal=False)
+    main(["practice", "prepare", "--template", "enterprise-pricing", "--id", "practice"])
+    output(capsys)
+
+    def fake_save_survey(practice, template, guide, path):
+        path.write_text("native survey")
+
+    monkeypatch.setattr("tommy.edsl_bridge.save_survey", fake_save_survey)
+    assert main(["practice", "build", "--practice", "practice", "--output-dir", "runs/practice"]) == 0
+    data = output(capsys)["data"]
+    assert Path(data["survey"]) == project / "runs/practice/survey.ep"
+    assert Path(data["guide"]) == project / "runs/practice/buyer-guide.md"
+    assert (project / "runs/practice/practice-manifest.json").exists()
+    assert not (project / ".tommy/practices/practice/survey.ep").exists()

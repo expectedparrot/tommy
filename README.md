@@ -4,13 +4,7 @@
 
 `tommy` is an agent-first package for preparing realistic sales roleplays with Expected Parrot, preserving attempts, registering transcript-grounded reviews, and producing self-contained coaching reports.
 
-**Documentation:** [Read the illustrated setup and launch guide](https://expectedparrot.github.io/tommy/)
-
-The product model is:
-
-```text
-reusable template + optional deal → practice → attempt → review → report → targeted drill
-```
+**Documentation:** [Work through the voice-practice tutorial](https://expectedparrot.github.io/tommy/)
 
 Templates contain simulation behavior. Deals contain supplied facts. A practice combines them without silently turning agent inference into deal history.
 
@@ -37,21 +31,24 @@ Operating rules:
    separate.
 3. Clearly distinguish facts I supplied from assumptions you inferred. Never convert an
    inference into deal history without telling me.
-4. Reuse an existing template or scorecard when it fits. Otherwise draft the smallest useful
-   JSON artifact, explain the consequential choices, and add it with `tommy template add`,
-   `tommy scorecard add`, or `tommy deal add`.
+4. Reuse an existing template or scorecard when it fits. Otherwise construct the component with
+   the keyword-based `create`, `add-group`, `add-criterion`, and `add-objection` commands so the
+   user can see each consequential choice. Bulk JSON `add` commands remain available when a
+   complete definition already exists or minimizing tool calls matters.
 5. Prepare one focused practice first. Default to a tough-but-winnable buyer, 10–15 minutes,
    and no more than 3–4 objection clusters unless my goal calls for something else.
-6. Run `tommy practice build` and then `tommy practice preview`. Summarize the buyer's role,
-   opening, pressure points, win condition, and any inferred context for my review.
+6. Run `tommy practice build --output-dir <named-directory>` and then `tommy practice preview`.
+   Summarize the buyer's role, opening, pressure points, win condition, and any inferred context.
 7. Do not deploy until I approve the preview. Deployment is an external action. Use
    `tommy practice deploy --practice <id> --confirm` only after approval.
 8. Never hide paid model inference or external writes. Explain what will happen before crossing
    an external boundary.
 9. Preserve each completed call as a distinct attempt. Do not overwrite an earlier transcript,
    review, or report.
-10. Prepare evaluator work with `tommy review prepare`. This creates a native Jobs artifact and
-    returns the exact `ep run` command; obtain approval before paid inference. Reviews must follow
+10. Prepare evaluator work with `tommy review prepare --output-dir <named-directory>`. This creates
+    a native Jobs artifact and returns the exact `ep run` command; obtain approval before paid inference.
+    Never pass a path beneath `.tommy` to `ep run`; all exported artifacts belong in an explicit
+    directory beneath the current working directory. Reviews must follow
     the selected scorecard and cite real transcript turn IDs. Do not invent
     quotations or evidence. Separate observed evidence, evaluator interpretation, and suggested
     alternatives. Use the review structure demonstrated in
@@ -87,7 +84,7 @@ tommy practice prepare \
   --deal acme-research \
   --id jordan-pricing
 
-tommy practice build --practice jordan-pricing
+tommy practice build --practice jordan-pricing --output-dir runs/jordan-pricing
 tommy practice preview --practice jordan-pricing
 tommy practice deploy --practice jordan-pricing --confirm
 ```
@@ -100,7 +97,8 @@ tommy attempt fetch \
   --uuid <human-survey-uuid> \
   --rep "Alex Rivera" \
   --buyer "Jordan Chen" \
-  --id alex-round-1
+  --id alex-round-1 \
+  --output-dir runs/alex-round-1
 ```
 
 An exported text or JSON transcript can also be imported:
@@ -116,21 +114,24 @@ tommy attempt import \
 Prepare one auditable evaluator call, execute it explicitly, and register the native Results:
 
 ```bash
-tommy review prepare --attempt alex-round-1 --model gpt-5.4-mini
+tommy review prepare \
+  --attempt alex-round-1 \
+  --model gpt-5.4-mini \
+  --output-dir runs/alex-round-1
 ep run \
-  --jobs .tommy/attempts/alex-round-1/review.jobs.ep \
-  --output .tommy/attempts/alex-round-1/review.results.ep
+  --jobs runs/alex-round-1/review.jobs.ep \
+  --output runs/alex-round-1/review.results.ep
 tommy review register \
   --attempt alex-round-1 \
-  --results .tommy/attempts/alex-round-1/review.results.ep
-tommy report --attempt alex-round-1
+  --results runs/alex-round-1/review.results.ep
+tommy report --attempt alex-round-1 --output-dir runs/alex-round-1
 ```
 
 Turn the weakest scorecard criterion into a focused five-minute drill, then compare reviewed attempts:
 
 ```bash
 tommy drill prepare --attempt alex-round-1 --id alex-closing-drill
-tommy practice build --practice alex-closing-drill
+tommy practice build --practice alex-closing-drill --output-dir runs/alex-closing-drill
 
 tommy compare --attempt alex-round-1 --attempt alex-round-2
 ```
