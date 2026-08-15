@@ -146,7 +146,9 @@ def test_next_is_artifact_driven(tmp_path: Path, monkeypatch, capsys) -> None:
     output(capsys)
     monkeypatch.chdir(project)
     assert main(["next"]) == 0
-    assert output(capsys)["data"]["stage"] == "empty"
+    data = output(capsys)["data"]
+    assert data["alias_for"] == "tommy agent next"
+    assert data["recommended_action"]["id"] == "create_scorecard"
 
 
 def test_drill_targets_weakest_criterion(tmp_path: Path, monkeypatch, capsys) -> None:
@@ -375,3 +377,7 @@ def test_build_exports_runnable_artifacts_outside_private_state(tmp_path: Path, 
     assert instructions["practice_id"] == "practice"
     assert "# Sales roleplay buyer guide" in instructions["instructions"]
     assert instructions["source"] == str(project / "runs/practice/buyer-guide.md")
+    assert main(["agent", "next"]) == 0
+    action = output(capsys)["data"]["recommended_action"]
+    assert action["id"] == "preview_practice"
+    assert action["requires_network"] is True

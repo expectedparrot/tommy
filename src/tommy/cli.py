@@ -38,6 +38,9 @@ def emit(
     next_steps: list[str] | None = None,
 ) -> dict[str, Any]:
     warnings = warnings or []
+    steps = list(next_steps or [])
+    if command not in {"tommy agent next", "tommy next"} and "tommy agent next" not in steps:
+        steps.append("tommy agent next")
     return {
         "schema_version": 1,
         "status": "warning" if warnings else "ok",
@@ -45,7 +48,7 @@ def emit(
         "data": data or {},
         "warnings": warnings,
         "errors": [],
-        "next_steps": next_steps or [],
+        "next_steps": steps,
     }
 
 
@@ -90,7 +93,7 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
     return emit(
         "tommy init",
         {"project": str(root), "marker": str(root / "tommy.json")},
-        next_steps=[f"cd {root}", "tommy guide"],
+        next_steps=[f"cd {root}", "tommy agent guide", "tommy agent next"],
     )
 
 
@@ -240,14 +243,21 @@ def built_context(store: Store, practice_id: str) -> tuple[dict[str, Any], dict[
 def cmd_preview(args: argparse.Namespace) -> dict[str, Any]:
     from .edsl_bridge import preview
 
-    practice, template, guide = built_context(Store.open(), args.practice)
+    store = Store.open()
+    practice, template, guide = built_context(store, args.practice)
+    preview_url = preview(practice, template, guide)
+    build = read_json(store.base / "practices" / practice["id"] / "build.json")
+    preview_record = {
+        "practice_id": practice["id"],
+        "preview_url": preview_url,
+        "guide_sha256": build["guide_sha256"],
+        "previewed_at": now(),
+        "external_state_created": False,
+    }
+    write_json(store.base / "practices" / practice["id"] / "preview.json", preview_record)
     return emit(
         "tommy practice preview",
-        {
-            "practice_id": practice["id"],
-            "preview_url": preview(practice, template, guide),
-            "external_state_created": False,
-        },
+        preview_record,
     )
 
 
@@ -255,9 +265,16 @@ def cmd_instructions(args: argparse.Namespace) -> dict[str, Any]:
     store = Store.open()
     practice, _, guide = built_context(store, args.practice)
     build = read_json(store.base / "practices" / practice["id"] / "build.json")
+    inspection = {
+        "practice_id": practice["id"],
+        "guide_sha256": build["guide_sha256"],
+        "inspected_at": now(),
+        "source": build["guide"],
+    }
+    write_json(store.base / "practices" / practice["id"] / "instructions-inspected.json", inspection)
     return emit(
         "tommy practice instructions",
-        {"practice_id": practice["id"], "instructions": guide, "source": build["guide"]},
+        {**inspection, "instructions": guide},
     )
 
 
@@ -437,51 +454,20 @@ def cmd_status(_: argparse.Namespace) -> dict[str, Any]:
 
 
 def cmd_next(_: argparse.Namespace) -> dict[str, Any]:
-    store = Store.open()
-    exists = {
-        kind: len(store.list(kind)) for kind in ("scorecards", "templates", "deals", "practices", "attempts")
-    }
-    if not exists["scorecards"]:
-        stage, recommendation = "empty", "tommy scorecard create --id <id> --name <name>"
-    elif not exists["templates"]:
-        stage, recommendation = "scorecard-ready", "tommy template create --id <id> ..."
-    elif not exists["practices"]:
-        stage, recommendation = "template-ready", "tommy practice prepare --template <id> --id <id>"
-    elif not exists["attempts"]:
-        stage, recommendation = (
-            "practice-ready",
-            "tommy practice build --practice <id> --output-dir runs/<id>",
-        )
-    else:
-        attempts = store.list("attempts")
-        unreviewed = [a for a in attempts if not (store.base / "attempts" / a["id"] / "review.json").exists()]
-        unreported = [
-            a
-            for a in attempts
-            if (store.base / "attempts" / a["id"] / "review.json").exists()
-            and not (store.base / "attempts" / a["id"] / "report-export.json").exists()
-        ]
-        if unreviewed:
-            attempt_id = unreviewed[0]["id"]
-            stage, recommendation = (
-                "attempt-awaiting-review",
-                f"tommy review prepare --attempt {attempt_id} --model <model> --output-dir runs/{attempt_id}",
-            )
-        elif unreported:
-            stage, recommendation = (
-                "reviewed",
-                f"tommy report --attempt {unreported[0]['id']} --output-dir runs/{unreported[0]['id']}",
-            )
-        else:
-            stage, recommendation = (
-                "complete",
-                f"tommy drill prepare --attempt {attempts[-1]['id']} --id <drill-id>",
-            )
-    return emit(
-        "tommy next",
-        {"stage": stage, "counts": exists, "recommendation": recommendation},
-        next_steps=[recommendation],
-    )
+    from .agent_contract import recommendation
+
+    data = recommendation()
+    return emit("tommy next", {"alias_for": "tommy agent next", **data})
+
+
+def cmd_agent(args: argparse.Namespace) -> dict[str, Any]:
+    from .agent_contract import guide, recommendation, state_for
+
+    if args.agent_command == "guide":
+        return emit("tommy agent guide", guide(), next_steps=["tommy agent next"])
+    if args.agent_command == "status":
+        return emit("tommy agent status", state_for())
+    return emit("tommy agent next", recommendation())
 
 
 def parser() -> argparse.ArgumentParser:
@@ -631,6 +617,11 @@ def parser() -> argparse.ArgumentParser:
     q.set_defaults(func=cmd_compare)
     sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("next").set_defaults(func=cmd_next)
+    agent = sub.add_parser("agent", help="Machine-readable workflow control surface")
+    agent_sub = agent.add_subparsers(dest="agent_command", required=True)
+    for name in ("guide", "next", "status"):
+        q = agent_sub.add_parser(name)
+        q.set_defaults(func=cmd_agent)
     return p
 
 

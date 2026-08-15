@@ -16,9 +16,11 @@ def test_documentation_is_self_contained_and_complete() -> None:
     assert "tommy scorecard create" in page
     assert "tommy template add-objection" in page
     assert "We are making up the IDs" in page
-    assert "ep-practice" in page and "directory name we chose" in page
+    assert "ep-practice" in page and "directory name the agent chose" in page
     assert "tommy practice instructions" in page
     assert "exact guide the sales target will follow" in page
+    assert "tommy agent next" in page
+    assert "The agent is the operator" in page
     for command in (
         "tommy init",
         "tommy practice prepare",

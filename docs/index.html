@@ -37,14 +37,45 @@
   <header>
     <div>
       <h1>A pricing call with Jordan</h1>
-      <p class="lede">A worked Tommy tutorial: construct a voice AI buyer, practice the call, and turn the transcript into evidence-linked coaching.</p>
+      <p class="lede">A worked Tommy tutorial for coding agents: construct a voice AI buyer, help a rep practice the call, and turn the transcript into evidence-linked coaching.</p>
     </div>
     <img src="assets/tommy-artwork.png" alt="Tommy, a green parrot salesperson in a plaid suit">
   </header>
 
   <nav aria-label="Tutorial sections">
-    <a href="#context">Context</a><a href="#buyer">Buyer</a><a href="#launch">Launch</a><a href="#review">Review</a><a href="#drill">Drill</a><a href="#json">JSON import</a>
+    <a href="#agent">Agent loop</a><a href="#context">Context</a><a href="#buyer">Buyer</a><a href="#launch">Launch</a><a href="#review">Review</a><a href="#drill">Drill</a><a href="#json">JSON import</a>
   </nav>
+
+  <section id="agent">
+    <h2>The agent is the operator</h2>
+    <p>Tommy is not meant to make a salesperson operate a long CLI workflow. A coding agent operates Tommy on the salesperson’s behalf, translates ordinary conversation into structured components, and pauses only for consequential missing information or approval.</p>
+    <p>The agent begins with the guide, then asks Tommy for one state-aware action. It repeats <code>agent next</code> after every material change instead of remembering the workflow from chat.</p>
+    <pre><code class="language-bash">tommy agent guide
+tommy agent next</code></pre>
+    <details><summary>Show abbreviated JSON response</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy agent next",
+  "data": {
+    "contract_version": "1.0",
+    "terminal": false,
+    "recommended_action": {
+      "id": "create_scorecard",
+      "cwd": "/work/ep-practice",
+      "argv": ["tommy", "scorecard", "create", "--id", "SCORECARD_ID", "--name", "SCORECARD_NAME"],
+      "mutates_local_state": true,
+      "requires_network": false,
+      "spends_money": false,
+      "requires_user_approval": false,
+      "unresolved_inputs": {
+        "SCORECARD_ID": {"type": "string", "description": "A short stable ID chosen by the agent."},
+        "SCORECARD_NAME": {"type": "string", "description": "A readable name for the scoring standard."}
+      },
+      "expected_transition": "The scorecard exists and needs at least one group."
+    }
+  }
+}</code></pre></details>
+    <p>The action’s <code>argv</code> is a token array, not a shell snippet. The agent replaces its explicit placeholders using known context, runs it from the returned <code>cwd</code>, and asks for the next action again. The flags make external actions and paid inference visible before execution. The detailed commands below show what that agent-controlled process creates; they are not chores the salesperson is expected to type.</p>
+  </section>
 
   <section id="context">
     <h2>The situation</h2>
@@ -53,7 +84,7 @@
     <p>Tommy separates three things: the scoring standard, reusable buyer behavior, and facts about this deal. We will construct each explicitly.</p>
 
     <h3>Start a project</h3>
-    <p>The first positional value, <code>ep-practice</code>, is a directory name we chose for this tutorial. Tommy creates that directory and keeps the scenario definitions and practice history together inside it. The longer value passed to <code>--name</code> is a human-readable project name. Neither value comes from Expected Parrot, and you can replace both with names that fit your work.</p>
+    <p>The first positional value, <code>ep-practice</code>, is a directory name the agent chose for this tutorial. Tommy creates that directory and keeps the scenario definitions and practice history together inside it. The longer value passed to <code>--name</code> is a human-readable project name. Neither value comes from Expected Parrot; the agent chooses useful names from the user’s context.</p>
     <p>After initialization we change into the new directory. Every later Tommy command discovers the project from the <code>tommy.json</code> marker created there.</p>
     <pre><code class="language-bash">tommy init ep-practice --name "Expected Parrot enterprise practice"
 cd ep-practice</code></pre>
@@ -72,7 +103,7 @@ cd ep-practice</code></pre>
   <section id="buyer">
     <h2>Define what good looks like</h2>
     <p>A scorecard tells the evaluator what to look for after the call. It is independent of any one buyer, so the same scoring standard can be reused across many practices.</p>
-    <p>We are making up the IDs in this section. <code>enterprise-call</code>, <code>conversation</code>, <code>discovery</code>, and <code>close</code> are short labels we chose so later commands can refer to these objects unambiguously. IDs should be memorable and stable; the accompanying names and descriptions are what people will read.</p>
+    <p>We are making up the IDs in this section. <code>enterprise-call</code>, <code>conversation</code>, <code>discovery</code>, and <code>close</code> are short labels the agent chooses so later commands can refer to these objects unambiguously. The salesperson should not be asked to invent them. IDs should be memorable and stable; the accompanying names and descriptions are what people will read.</p>
     <p>First we create an empty scorecard, then a group that organizes related criteria, and finally two criteria. Each criterion is worth up to two points. Tommy will later give these definitions and the transcript to an evaluator, which must score both criteria and cite the turns supporting its judgment.</p>
     <pre><code class="language-bash">tommy scorecard create --id enterprise-call --name "Enterprise sales call"
 

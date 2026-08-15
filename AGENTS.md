@@ -16,6 +16,11 @@ template + optional deal → practice → attempt → review → report → targ
 - Preserve attempts and reviews rather than overwriting prior practice evidence.
 - Review evidence must cite valid transcript turn IDs. Keep observed evidence, interpretation, and suggested alternatives distinct.
 - AI buyer behavior is practice evidence, not a prediction of how a real buyer will behave.
+- `tommy agent next` is the canonical control surface. It must remain deterministic and read-only,
+  recommend one state-derived action, and expose tokenized argv, unresolved inputs, artifacts,
+  expected transitions, and mutation/network/spending/approval flags.
+- Human users should supply sales context and consequential approvals, not operate the CLI or
+  invent internal identifiers. Agents choose stable IDs and rerun `agent next` after mutations.
 
 ## Engineering workflow
 
@@ -25,4 +30,3 @@ template + optional deal → practice → attempt → review → report → targ
 - Add stable error codes for recoverable failures and test them.
 - Run `python -m ruff check src tests` and `python -m pytest -q` before handoff.
 - Do not perform live deployment or paid inference in tests.
-
