@@ -10,7 +10,17 @@ from . import __version__
 from .errors import TommyError
 from .report import generate_report
 from .store import Store, now, read_json, write_json
-from .workflows import build_practice, import_artifact, import_attempt, prepare_practice, register_review
+from .workflows import (
+    build_practice,
+    compare_attempts,
+    import_artifact,
+    import_attempt,
+    prepare_drill,
+    prepare_practice,
+    record_fetched_attempt,
+    register_review,
+    register_review_value,
+)
 
 
 def emit(
@@ -22,6 +32,7 @@ def emit(
 ) -> dict[str, Any]:
     warnings = warnings or []
     return {
+        "schema_version": 1,
         "status": "warning" if warnings else "ok",
         "command": command,
         "data": data or {},
@@ -45,14 +56,19 @@ def cmd_guide(_: argparse.Namespace) -> dict[str, Any]:
                 "tommy practice build --practice <id>",
                 "tommy practice preview --practice <id>",
                 "tommy practice deploy --practice <id> --confirm",
+                "tommy attempt fetch --practice <id> --uuid <uuid> --rep <name> --id <id>",
                 "tommy attempt import --practice <id> --transcript <file> --rep <name> --id <id>",
-                "tommy review register --attempt <id> --file <review.json>",
+                "tommy review prepare --attempt <id> --model <model>",
+                "ep run --jobs <review.jobs.ep> --output <review.results.ep>",
+                "tommy review register --attempt <id> --results <review.results.ep>",
                 "tommy report --attempt <id>",
+                "tommy drill prepare --attempt <id> --id <drill-id>",
+                "tommy compare --attempt <id> --attempt <id>",
             ],
             "boundaries": {
                 "preview": "Read-only preview; no respondent study is launched.",
                 "deploy": "Creates a private Expected Parrot respondent study and requires --confirm.",
-                "review": "Model execution is external; register only imports a completed structured review.",
+                "review": "Prepare creates Jobs; `ep run` performs visible model inference; register imports Results.",
             },
         },
     )
@@ -179,20 +195,127 @@ def cmd_attempt_import(args: argparse.Namespace) -> dict[str, Any]:
         "tommy attempt import",
         data,
         next_steps=[
-            f"Create a structured review for attempt {data['id']}",
-            f"tommy review register --attempt {data['id']} --file <review.json>",
+            f"tommy review prepare --attempt {data['id']} --model <model>",
+        ],
+    )
+
+
+def cmd_attempt_fetch(args: argparse.Namespace) -> dict[str, Any]:
+    from .edsl_bridge import fetch_human_transcript
+
+    store = Store.open()
+    responses_path = store.base / "attempts" / args.id / "responses.ep"
+    turns, metadata = fetch_human_transcript(args.uuid, responses_path, args.response_index)
+    data = record_fetched_attempt(
+        store,
+        args.id,
+        args.practice,
+        turns,
+        args.rep,
+        args.buyer,
+        args.uuid,
+        responses_path,
+        args.response_index,
+    )
+    data.update(
+        {
+            "uuid": args.uuid,
+            "response_index": args.response_index,
+            "available_responses": metadata["response_count"],
+            "responses": str(responses_path),
+        }
+    )
+    return emit(
+        "tommy attempt fetch",
+        data,
+        next_steps=[f"tommy review prepare --attempt {data['id']} --model <model>"],
+    )
+
+
+def cmd_review_prepare(args: argparse.Namespace) -> dict[str, Any]:
+    from .edsl_bridge import build_review_jobs
+
+    store = Store.open()
+    attempt = store.get("attempts", args.attempt)
+    practice = store.get("practices", attempt["practice_id"])
+    scorecard = store.get("scorecards", practice["scorecard_id"])
+    base = store.base / "attempts" / attempt["id"]
+    output = Path(args.output).resolve() if args.output else base / "review.jobs.ep"
+    details = build_review_jobs(attempt, scorecard, args.model, args.service, output)
+    expected = output.with_name(output.name.replace(".jobs.ep", ".results.ep"))
+    command = f"ep run --jobs {output} --output {expected}"
+    manifest = {
+        "attempt_id": attempt["id"],
+        "jobs": str(output),
+        "expected_results": str(expected),
+        "run_command": command,
+        "prepared_at": now(),
+        **details,
+    }
+    write_json(base / "review-job.json", manifest)
+    return emit(
+        "tommy review prepare",
+        manifest,
+        next_steps=[
+            "Obtain approval before paid inference.",
+            command,
+            f"tommy review register --attempt {attempt['id']} --results {expected}",
         ],
     )
 
 
 def cmd_review_register(args: argparse.Namespace) -> dict[str, Any]:
-    data = register_review(Store.open(), args.attempt, Path(args.file))
+    store = Store.open()
+    if args.results:
+        from .edsl_bridge import review_from_results
+
+        source = Path(args.results).resolve()
+        data = register_review_value(store, args.attempt, review_from_results(source), str(source))
+    else:
+        data = register_review(store, args.attempt, Path(args.file))
     return emit("tommy review register", data, next_steps=[f"tommy report --attempt {args.attempt}"])
 
 
 def cmd_report(args: argparse.Namespace) -> dict[str, Any]:
     data = generate_report(Store.open(), args.attempt, Path(args.output) if args.output else None)
     return emit("tommy report", data, next_steps=[f"Open {data['report']}"])
+
+
+def cmd_drill_prepare(args: argparse.Namespace) -> dict[str, Any]:
+    data = prepare_drill(Store.open(), args.attempt, args.id, args.criterion)
+    return emit("tommy drill prepare", data, next_steps=[f"tommy practice build --practice {data['id']}"])
+
+
+def cmd_compare(args: argparse.Namespace) -> dict[str, Any]:
+    return emit("tommy compare", compare_attempts(Store.open(), args.attempt))
+
+
+def cmd_status(_: argparse.Namespace) -> dict[str, Any]:
+    store = Store.open()
+    practices = []
+    for practice in store.list("practices"):
+        base = store.base / "practices" / practice["id"]
+        practices.append(
+            {
+                "id": practice["id"],
+                "kind": practice.get("kind", "practice"),
+                "built": (base / "build.json").exists(),
+                "deployment_count": len(list((base / "deployments").glob("*.json"))),
+            }
+        )
+    attempts = []
+    for attempt in store.list("attempts"):
+        base = store.base / "attempts" / attempt["id"]
+        attempts.append(
+            {
+                "id": attempt["id"],
+                "practice_id": attempt["practice_id"],
+                "review_prepared": (base / "review-job.json").exists(),
+                "reviewed": (base / "review.json").exists(),
+                "reported": (base / "report.html").exists(),
+            }
+        )
+    return emit("tommy status", {"practices": practices, "attempts": attempts})
 
 
 def cmd_next(_: argparse.Namespace) -> dict[str, Any]:
@@ -209,10 +332,26 @@ def cmd_next(_: argparse.Namespace) -> dict[str, Any]:
     elif not exists["attempts"]:
         stage, recommendation = "practice-ready", "tommy practice build --practice <id>"
     else:
-        stage, recommendation = (
-            "attempts-available",
-            "tommy review register --attempt <id> --file <review.json>",
-        )
+        attempts = store.list("attempts")
+        unreviewed = [a for a in attempts if not (store.base / "attempts" / a["id"] / "review.json").exists()]
+        unreported = [
+            a
+            for a in attempts
+            if (store.base / "attempts" / a["id"] / "review.json").exists()
+            and not (store.base / "attempts" / a["id"] / "report.html").exists()
+        ]
+        if unreviewed:
+            stage, recommendation = (
+                "attempt-awaiting-review",
+                f"tommy review prepare --attempt {unreviewed[0]['id']} --model <model>",
+            )
+        elif unreported:
+            stage, recommendation = "reviewed", f"tommy report --attempt {unreported[0]['id']}"
+        else:
+            stage, recommendation = (
+                "complete",
+                f"tommy drill prepare --attempt {attempts[-1]['id']} --id <drill-id>",
+            )
     return emit(
         "tommy next",
         {"stage": stage, "counts": exists, "recommendation": recommendation},
@@ -258,6 +397,14 @@ def parser() -> argparse.ArgumentParser:
             q.add_argument("--confirm", action="store_true")
         q.set_defaults(func=func)
     attempt = sub.add_parser("attempt").add_subparsers(dest="attempt_command", required=True)
+    q = attempt.add_parser("fetch")
+    q.add_argument("--practice", required=True)
+    q.add_argument("--uuid", required=True)
+    q.add_argument("--response-index", type=int, default=0)
+    q.add_argument("--rep", required=True)
+    q.add_argument("--buyer", required=True)
+    q.add_argument("--id", required=True)
+    q.set_defaults(func=cmd_attempt_fetch)
     q = attempt.add_parser("import")
     q.add_argument("--practice", required=True)
     q.add_argument("--transcript", required=True)
@@ -266,14 +413,32 @@ def parser() -> argparse.ArgumentParser:
     q.add_argument("--id", required=True)
     q.set_defaults(func=cmd_attempt_import)
     review = sub.add_parser("review").add_subparsers(dest="review_command", required=True)
+    q = review.add_parser("prepare")
+    q.add_argument("--attempt", required=True)
+    q.add_argument("--model", required=True)
+    q.add_argument("--service")
+    q.add_argument("--output")
+    q.set_defaults(func=cmd_review_prepare)
     q = review.add_parser("register")
     q.add_argument("--attempt", required=True)
-    q.add_argument("--file", required=True)
+    source = q.add_mutually_exclusive_group(required=True)
+    source.add_argument("--file")
+    source.add_argument("--results")
     q.set_defaults(func=cmd_review_register)
     q = sub.add_parser("report")
     q.add_argument("--attempt", required=True)
     q.add_argument("--output")
     q.set_defaults(func=cmd_report)
+    drill = sub.add_parser("drill").add_subparsers(dest="drill_command", required=True)
+    q = drill.add_parser("prepare")
+    q.add_argument("--attempt", required=True)
+    q.add_argument("--id", required=True)
+    q.add_argument("--criterion")
+    q.set_defaults(func=cmd_drill_prepare)
+    q = sub.add_parser("compare")
+    q.add_argument("--attempt", action="append", required=True)
+    q.set_defaults(func=cmd_compare)
+    sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("next").set_defaults(func=cmd_next)
     return p
 
@@ -289,6 +454,7 @@ def main(argv: list[str] | None = None) -> int:
         if exc.context:
             error["context"] = exc.context
         result = {
+            "schema_version": 1,
             "status": "error",
             "command": "tommy " + " ".join((argv or sys.argv[1:])[:2]),
             "data": {},
@@ -299,11 +465,23 @@ def main(argv: list[str] | None = None) -> int:
         code = 1
     except (OSError, json.JSONDecodeError) as exc:
         result = {
+            "schema_version": 1,
             "status": "error",
             "command": "tommy",
             "data": {},
             "warnings": [],
             "errors": [{"code": "io_error", "message": str(exc)}],
+            "next_steps": [],
+        }
+        code = 1
+    except Exception as exc:
+        result = {
+            "schema_version": 1,
+            "status": "error",
+            "command": "tommy",
+            "data": {},
+            "warnings": [],
+            "errors": [{"code": "unexpected_error", "message": str(exc)}],
             "next_steps": [],
         }
         code = 1

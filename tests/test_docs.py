@@ -16,11 +16,14 @@ def test_documentation_is_self_contained_and_complete() -> None:
         "tommy practice build",
         "tommy practice preview",
         "tommy practice deploy",
+        "tommy attempt fetch",
         "tommy attempt import",
+        "tommy review prepare",
         "tommy review register",
         "tommy report",
+        "tommy drill prepare",
+        "tommy compare",
     ):
         assert command in page
     assert "https://" not in page
     assert "http://" not in page
-

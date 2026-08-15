@@ -78,6 +78,7 @@ def test_deal_specific_attempt_review_and_report(tmp_path: Path, monkeypatch, ca
     assert "Recommendations from Tommy" in html
     assert 'href="#turn-006"' in html
     assert "Scorecard" in html and "Objections" in html
+    assert 'class="transcript-search"' in html
     assert "http://" not in html and "https://" not in html
     assert report == project / ".tommy/attempts/round-1/report.html"
 
@@ -146,3 +147,120 @@ def test_next_is_artifact_driven(tmp_path: Path, monkeypatch, capsys) -> None:
     monkeypatch.chdir(project)
     assert main(["next"]) == 0
     assert output(capsys)["data"]["stage"] == "empty"
+
+
+def test_drill_targets_weakest_criterion(tmp_path: Path, monkeypatch, capsys) -> None:
+    setup_project(tmp_path, monkeypatch, capsys)
+    main(
+        [
+            "practice",
+            "prepare",
+            "--template",
+            "enterprise-pricing",
+            "--deal",
+            "acme-research",
+            "--id",
+            "full-call",
+        ]
+    )
+    output(capsys)
+    main(
+        [
+            "attempt",
+            "import",
+            "--practice",
+            "full-call",
+            "--transcript",
+            str(EXAMPLE / "transcript.txt"),
+            "--rep",
+            "Alex Rivera",
+            "--id",
+            "round-1",
+        ]
+    )
+    output(capsys)
+    main(["review", "register", "--attempt", "round-1", "--file", str(EXAMPLE / "review.json")])
+    output(capsys)
+    assert main(["drill", "prepare", "--attempt", "round-1", "--id", "closing-drill"]) == 0
+    drill = output(capsys)["data"]
+    assert drill["kind"] == "targeted_drill"
+    assert drill["parent_attempt_id"] == "round-1"
+    assert drill["target_criterion_id"] == "close"
+    assert drill["settings"]["duration_minutes"] == 5
+
+
+def test_compare_reports_change_from_first_attempt(tmp_path: Path, monkeypatch, capsys) -> None:
+    setup_project(tmp_path, monkeypatch, capsys, with_deal=False)
+    main(["practice", "prepare", "--template", "enterprise-pricing", "--id", "practice"])
+    output(capsys)
+    for attempt_id in ("round-1", "round-2"):
+        main(
+            [
+                "attempt",
+                "import",
+                "--practice",
+                "practice",
+                "--transcript",
+                str(EXAMPLE / "transcript.txt"),
+                "--rep",
+                "Alex Rivera",
+                "--id",
+                attempt_id,
+            ]
+        )
+        output(capsys)
+    first = json.loads((EXAMPLE / "review.json").read_text())
+    second = json.loads((EXAMPLE / "review.json").read_text())
+    second["criteria"][0]["score"] = 2
+    first_path, second_path = tmp_path / "first.json", tmp_path / "second.json"
+    first_path.write_text(json.dumps(first))
+    second_path.write_text(json.dumps(second))
+    main(["review", "register", "--attempt", "round-1", "--file", str(first_path)])
+    output(capsys)
+    main(["review", "register", "--attempt", "round-2", "--file", str(second_path)])
+    output(capsys)
+    assert main(["compare", "--attempt", "round-1", "--attempt", "round-2"]) == 0
+    comparison = output(capsys)["data"]
+    assert comparison["attempts"][1]["change_from_first"]["opening"] == 1
+
+
+def test_status_reports_material_stages(tmp_path: Path, monkeypatch, capsys) -> None:
+    setup_project(tmp_path, monkeypatch, capsys, with_deal=False)
+    main(["practice", "prepare", "--template", "enterprise-pricing", "--id", "practice"])
+    output(capsys)
+    main(
+        [
+            "attempt",
+            "import",
+            "--practice",
+            "practice",
+            "--transcript",
+            str(EXAMPLE / "transcript.txt"),
+            "--rep",
+            "Alex Rivera",
+            "--id",
+            "round-1",
+        ]
+    )
+    output(capsys)
+    assert main(["status"]) == 0
+    status = output(capsys)["data"]
+    assert status["practices"][0]["built"] is False
+    assert status["attempts"][0]["reviewed"] is False
+
+
+def test_envelopes_are_versioned(capsys) -> None:
+    assert main(["guide"]) == 0
+    assert output(capsys)["schema_version"] == 1
+
+
+def test_build_refuses_changed_inputs(tmp_path: Path, monkeypatch, capsys) -> None:
+    project = setup_project(tmp_path, monkeypatch, capsys, with_deal=False)
+    main(["practice", "prepare", "--template", "enterprise-pricing", "--id", "practice"])
+    output(capsys)
+    template_path = project / ".tommy/templates/enterprise-pricing.json"
+    template = json.loads(template_path.read_text())
+    template["buyer"]["behavior"] = "Changed after preparation"
+    template_path.write_text(json.dumps(template))
+    assert main(["practice", "build", "--practice", "practice"]) == 1
+    assert output(capsys)["errors"][0]["code"] == "stale_practice"

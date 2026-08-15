@@ -130,6 +130,20 @@ def build_practice(store: Store, practice_id: str) -> dict[str, Any]:
     practice = store.get("practices", practice_id)
     template = store.get("templates", practice["template_id"])
     deal = store.get("deals", practice["deal_id"]) if practice.get("deal_id") else None
+    scorecard = store.get("scorecards", practice["scorecard_id"])
+    stale = []
+    if digest(template) != practice["template_sha256"]:
+        stale.append("template")
+    if deal and digest(deal) != practice["deal_sha256"]:
+        stale.append("deal")
+    if digest(scorecard) != practice["scorecard_sha256"]:
+        stale.append("scorecard")
+    if stale:
+        raise TommyError(
+            "stale_practice",
+            f"Practice inputs changed after preparation: {', '.join(stale)}.",
+            hint="Prepare a new practice so the changed inputs receive new provenance hashes.",
+        )
     base = store.base / "practices" / practice["id"]
     base.mkdir(parents=True, exist_ok=True)
     guide = render_buyer_guide(template, deal, practice)
@@ -213,11 +227,44 @@ def import_attempt(
     return {"id": record["id"], "path": str(path), "turn_count": len(roles), "rep": rep, "buyer": buyer_name}
 
 
-def register_review(store: Store, attempt_id: str, source: Path) -> dict[str, Any]:
+def record_fetched_attempt(
+    store: Store,
+    attempt_id: str,
+    practice_id: str,
+    turns: list[dict[str, Any]],
+    rep: str,
+    buyer: str,
+    uuid: str,
+    responses_path: Path,
+    response_index: int,
+) -> dict[str, Any]:
+    practice = store.get("practices", practice_id)
+    normalized = [{**turn, "speaker": buyer if turn["role"] == "buyer" else rep} for turn in turns]
+    record = {
+        "schema_version": 1,
+        "id": slug(attempt_id),
+        "practice_id": practice["id"],
+        "practice_sha256": digest(practice),
+        "rep": rep,
+        "buyer": buyer,
+        "turns": normalized,
+        "source": "expected_parrot_human_survey",
+        "human_survey_uuid": uuid,
+        "response_index": response_index,
+        "responses_artifact": str(responses_path),
+        "created_at": now(),
+        "status": "completed",
+    }
+    path = store.add("attempts", attempt_id, record)
+    return {"id": record["id"], "path": str(path), "turn_count": len(normalized), "rep": rep, "buyer": buyer}
+
+
+def register_review_value(
+    store: Store, attempt_id: str, value: dict[str, Any], source: str
+) -> dict[str, Any]:
     attempt = store.get("attempts", attempt_id)
     practice = store.get("practices", attempt["practice_id"])
     scorecard = store.get("scorecards", practice["scorecard_id"])
-    value = json.loads(source.read_text(encoding="utf-8"))
     validate_review(value, scorecard)
     valid_turns = {turn["turn_id"] for turn in attempt["turns"]}
     referenced = {e["turn_id"] for criterion in value["criteria"] for e in criterion.get("evidence", [])}
@@ -232,7 +279,7 @@ def register_review(store: Store, attempt_id: str, source: Path) -> dict[str, An
         "schema_version": 1,
         "attempt_id": attempt["id"],
         "scorecard_id": scorecard["id"],
-        "source": str(source.resolve()),
+        "source": source,
         "source_sha256": digest(value),
         "registered_at": now(),
     }
@@ -248,3 +295,85 @@ def register_review(store: Store, attempt_id: str, source: Path) -> dict[str, An
         "criteria": len(review["criteria"]),
         "evidence_references": len(referenced),
     }
+
+
+def register_review(store: Store, attempt_id: str, source: Path) -> dict[str, Any]:
+    value = json.loads(source.read_text(encoding="utf-8"))
+    return register_review_value(store, attempt_id, value, str(source.resolve()))
+
+
+def prepare_drill(
+    store: Store, attempt_id: str, drill_id: str, criterion_id: str | None = None
+) -> dict[str, Any]:
+    attempt = store.get("attempts", attempt_id)
+    practice = store.get("practices", attempt["practice_id"])
+    scorecard = store.get("scorecards", practice["scorecard_id"])
+    review_path = store.base / "attempts" / attempt["id"] / "review.json"
+    if not review_path.exists():
+        raise TommyError(
+            "review_required", f"Attempt `{attempt_id}` must be reviewed before creating a drill."
+        )
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    definitions = {c["id"]: c for group in scorecard["groups"] for c in group["criteria"]}
+    results = {item["criterion_id"]: item for item in review["criteria"]}
+    if criterion_id and criterion_id not in definitions:
+        raise TommyError("criterion_not_found", f"Unknown criterion: {criterion_id}")
+    selected = criterion_id or min(
+        definitions,
+        key=lambda item: (float(results[item]["score"]) / definitions[item]["max_score"], item),
+    )
+    definition = definitions[selected]
+    overrides = {
+        "duration_minutes": 5,
+        "opening": "directly_at_the_target_objection",
+        "focus": [definition["name"]],
+        "difficulty": practice["settings"]["difficulty"],
+        "mode": practice["settings"]["mode"],
+    }
+    drill = prepare_practice(store, drill_id, practice["template_id"], practice.get("deal_id"), overrides)
+    path = store.path("practices", drill["id"])
+    record = store.get("practices", drill["id"])
+    record.update(
+        {
+            "kind": "targeted_drill",
+            "parent_attempt_id": attempt["id"],
+            "target_criterion_id": selected,
+            "target_criterion": definition["name"],
+            "coaching_context": {
+                "prior_score": results[selected]["score"],
+                "max_score": definition["max_score"],
+                "explanation": results[selected]["explanation"],
+                "better_response": results[selected].get("better_response"),
+            },
+        }
+    )
+    write_json(path, record)
+    return {**record, "path": str(path)}
+
+
+def compare_attempts(store: Store, attempt_ids: list[str]) -> dict[str, Any]:
+    if len(attempt_ids) < 2:
+        raise TommyError("comparison_requires_attempts", "Compare requires at least two attempts.")
+    rows = []
+    scorecard_id: str | None = None
+    for attempt_id in attempt_ids:
+        attempt = store.get("attempts", attempt_id)
+        practice = store.get("practices", attempt["practice_id"])
+        if scorecard_id and practice["scorecard_id"] != scorecard_id:
+            raise TommyError("incompatible_scorecards", "Compared attempts must use the same scorecard.")
+        scorecard_id = practice["scorecard_id"]
+        review_path = store.base / "attempts" / attempt["id"] / "review.json"
+        if not review_path.exists():
+            raise TommyError("review_required", f"Attempt `{attempt_id}` has no registered review.")
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        rows.append(
+            {
+                "attempt_id": attempt["id"],
+                "rep": attempt["rep"],
+                "scores": {item["criterion_id"]: item["score"] for item in review["criteria"]},
+            }
+        )
+    baseline = rows[0]["scores"]
+    for row in rows:
+        row["change_from_first"] = {key: row["scores"][key] - baseline[key] for key in baseline}
+    return {"scorecard_id": scorecard_id, "attempts": rows, "baseline": rows[0]["attempt_id"]}

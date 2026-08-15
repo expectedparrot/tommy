@@ -50,12 +50,14 @@ Operating rules:
    an external boundary.
 9. Preserve each completed call as a distinct attempt. Do not overwrite an earlier transcript,
    review, or report.
-10. Reviews must follow the selected scorecard and cite real transcript turn IDs. Do not invent
+10. Prepare evaluator work with `tommy review prepare`. This creates a native Jobs artifact and
+    returns the exact `ep run` command; obtain approval before paid inference. Reviews must follow
+    the selected scorecard and cite real transcript turn IDs. Do not invent
     quotations or evidence. Separate observed evidence, evaluator interpretation, and suggested
     alternatives. Use the review structure demonstrated in
     `examples/enterprise-pricing/review.json`.
-11. Register the structured review with `tommy review register`, then generate the standalone
-    report with `tommy report`.
+11. Register the resulting native Results with `tommy review register --results`, then generate
+    the standalone report with `tommy report`.
 12. End with the three highest-leverage coaching recommendations. When useful, propose a short
     follow-up drill aimed at the weakest criterion rather than repeating the entire call.
 13. Describe simulated buyer behavior as practice evidence, not as a prediction of how the real
@@ -90,7 +92,18 @@ tommy practice preview --practice jordan-pricing
 tommy practice deploy --practice jordan-pricing --confirm
 ```
 
-After a call, retrieve or export its transcript and register an attempt:
+After a call, retrieve its transcript directly from Expected Parrot:
+
+```bash
+tommy attempt fetch \
+  --practice jordan-pricing \
+  --uuid <human-survey-uuid> \
+  --rep "Alex Rivera" \
+  --buyer "Jordan Chen" \
+  --id alex-round-1
+```
+
+An exported text or JSON transcript can also be imported:
 
 ```bash
 tommy attempt import \
@@ -98,9 +111,28 @@ tommy attempt import \
   --transcript transcript.json \
   --rep "Alex Rivera" \
   --id alex-round-1
+```
 
-tommy review register --attempt alex-round-1 --file review.json
+Prepare one auditable evaluator call, execute it explicitly, and register the native Results:
+
+```bash
+tommy review prepare --attempt alex-round-1 --model gpt-5.4-mini
+ep run \
+  --jobs .tommy/attempts/alex-round-1/review.jobs.ep \
+  --output .tommy/attempts/alex-round-1/review.results.ep
+tommy review register \
+  --attempt alex-round-1 \
+  --results .tommy/attempts/alex-round-1/review.results.ep
 tommy report --attempt alex-round-1
+```
+
+Turn the weakest scorecard criterion into a focused five-minute drill, then compare reviewed attempts:
+
+```bash
+tommy drill prepare --attempt alex-round-1 --id alex-closing-drill
+tommy practice build --practice alex-closing-drill
+
+tommy compare --attempt alex-round-1 --attempt alex-round-2
 ```
 
 The generated report is standalone HTML with a searchable visual transcript, coaching summary, expandable scorecard, objection analysis, and evidence links that jump to exact transcript turns. The structured review remains canonical.
@@ -110,7 +142,8 @@ The generated report is standalone HTML with a searchable visual transcript, coa
 - `practice build` creates and verifies a native EDSL Survey artifact.
 - `practice preview` does not launch a respondent study.
 - `practice deploy --confirm` explicitly creates a private Expected Parrot study.
-- Review model execution is not hidden inside `tommy`; `review register` imports completed structured evidence.
+- `review prepare` creates native Jobs and reports one expected model call; `ep run` remains explicit.
+- `review register --results` imports and validates completed native Results.
 - Roleplays are practice evidence, not claims about how a real buyer will behave.
 
 Run `tommy guide` for the complete lifecycle and `tommy next` for an artifact-based recommendation.

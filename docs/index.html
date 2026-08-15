@@ -182,6 +182,13 @@ tommy practice preview --practice jordan-pricing</pre></div>
 
     <section id="attempt">
       <div class="section-head"><div class="section-no">04</div><div><h2>Preserve every attempt.</h2><p>Each completed call becomes a distinct attempt. Earlier transcripts and reviews are never silently overwritten, making improvement across repeated practice measurable.</p></div></div>
+      <div class="code"><div class="code-label"><span>Shell · fetch EP response</span><button class="copy">Copy</button></div><pre>tommy attempt fetch \
+  --practice jordan-pricing \
+  --uuid &lt;human-survey-uuid&gt; \
+  --rep "Alex Rivera" \
+  --buyer "Jordan Chen" \
+  --id alex-round-1</pre></div>
+      <p>You can also register an exported text or JSON transcript:</p>
       <div class="code"><div class="code-label"><span>Shell · import transcript</span><button class="copy">Copy</button></div><pre>tommy attempt import \
   --practice jordan-pricing \
   --transcript transcript.json \
@@ -210,12 +217,30 @@ tommy practice preview --practice jordan-pricing</pre></div>
           <div class="criterion"><span>●</span> Concrete next step <b>1/2</b></div>
         </div>
       </div>
-      <div class="code"><div class="code-label"><span>Shell · register and render</span><button class="copy">Copy</button></div><pre>tommy review register \
+      <div class="code"><div class="code-label"><span>Shell · prepare, run, register, and render</span><button class="copy">Copy</button></div><pre>tommy review prepare \
   --attempt alex-round-1 \
-  --file review.json
+  --model gpt-5.4-mini
+
+ep run \
+  --jobs .tommy/attempts/alex-round-1/review.jobs.ep \
+  --output .tommy/attempts/alex-round-1/review.results.ep
+
+tommy review register \
+  --attempt alex-round-1 \
+  --results .tommy/attempts/alex-round-1/review.results.ep
 
 tommy report --attempt alex-round-1</pre></div>
       <div class="callout"><strong>What the HTML report contains</strong>Buyer and seller transcript styling, overall and grouped scores, strengths, recommendations, expandable criteria, objection resolution, evaluator confidence, and links that scroll to and highlight exact transcript turns.</div>
+      <h3>Turn the weakest criterion into the next drill</h3>
+      <div class="code"><div class="code-label"><span>Shell · targeted improvement loop</span><button class="copy">Copy</button></div><pre>tommy drill prepare \
+  --attempt alex-round-1 \
+  --id alex-closing-drill
+
+tommy practice build --practice alex-closing-drill
+
+tommy compare \
+  --attempt alex-round-1 \
+  --attempt alex-round-2</pre></div>
     </section>
 
     <section id="agent">
