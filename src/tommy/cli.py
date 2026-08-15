@@ -63,6 +63,7 @@ def cmd_guide(_: argparse.Namespace) -> dict[str, Any]:
                 "tommy deal create --id <id> ...  # optional",
                 "tommy practice prepare --template <id> [--deal <id>] --id <id>",
                 "tommy practice build --practice <id> --output-dir <directory>",
+                "tommy practice instructions --practice <id>",
                 "tommy practice preview --practice <id>",
                 "tommy practice deploy --practice <id> --confirm",
                 "tommy attempt fetch --practice <id> --uuid <uuid> --rep <name> --id <id> --output-dir <directory>",
@@ -207,7 +208,12 @@ def cmd_practice_build(args: argparse.Namespace) -> dict[str, Any]:
     write_json(output_dir / "practice-manifest.json", manifest)
     write_json(store.base / "practices" / practice["id"] / "build.json", manifest)
     return emit(
-        "tommy practice build", manifest, next_steps=[f"tommy practice preview --practice {practice['id']}"]
+        "tommy practice build",
+        manifest,
+        next_steps=[
+            f"tommy practice instructions --practice {practice['id']}",
+            f"tommy practice preview --practice {practice['id']}",
+        ],
     )
 
 
@@ -242,6 +248,16 @@ def cmd_preview(args: argparse.Namespace) -> dict[str, Any]:
             "preview_url": preview(practice, template, guide),
             "external_state_created": False,
         },
+    )
+
+
+def cmd_instructions(args: argparse.Namespace) -> dict[str, Any]:
+    store = Store.open()
+    practice, _, guide = built_context(store, args.practice)
+    build = read_json(store.base / "practices" / practice["id"] / "build.json")
+    return emit(
+        "tommy practice instructions",
+        {"practice_id": practice["id"], "instructions": guide, "source": build["guide"]},
     )
 
 
@@ -567,6 +583,9 @@ def parser() -> argparse.ArgumentParser:
         if name == "deploy":
             q.add_argument("--confirm", action="store_true")
         q.set_defaults(func=func)
+    q = practice.add_parser("instructions")
+    q.add_argument("--practice", required=True)
+    q.set_defaults(func=cmd_instructions)
     attempt = sub.add_parser("attempt").add_subparsers(dest="attempt_command", required=True)
     q = attempt.add_parser("fetch")
     q.add_argument("--practice", required=True)

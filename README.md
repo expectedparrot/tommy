@@ -37,8 +37,9 @@ Operating rules:
    complete definition already exists or minimizing tool calls matters.
 5. Prepare one focused practice first. Default to a tough-but-winnable buyer, 10–15 minutes,
    and no more than 3–4 objection clusters unless my goal calls for something else.
-6. Run `tommy practice build --output-dir <named-directory>` and then `tommy practice preview`.
-   Summarize the buyer's role, opening, pressure points, win condition, and any inferred context.
+6. Run `tommy practice build --output-dir <named-directory>`, inspect the exact generated buyer
+   guide with `tommy practice instructions`, and then run `tommy practice preview`. Summarize the
+   buyer's role, opening, pressure points, win condition, and any inferred context.
 7. Do not deploy until I approve the preview. Deployment is an external action. Use
    `tommy practice deploy --practice <id> --confirm` only after approval.
 8. Never hide paid model inference or external writes. Explain what will happen before crossing
@@ -85,6 +86,7 @@ tommy practice prepare \
   --id jordan-pricing
 
 tommy practice build --practice jordan-pricing --output-dir runs/jordan-pricing
+tommy practice instructions --practice jordan-pricing
 tommy practice preview --practice jordan-pricing
 tommy practice deploy --practice jordan-pricing --confirm
 ```

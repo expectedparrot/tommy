@@ -370,3 +370,8 @@ def test_build_exports_runnable_artifacts_outside_private_state(tmp_path: Path, 
     assert Path(data["guide"]) == project / "runs/practice/buyer-guide.md"
     assert (project / "runs/practice/practice-manifest.json").exists()
     assert not (project / ".tommy/practices/practice/survey.ep").exists()
+    assert main(["practice", "instructions", "--practice", "practice"]) == 0
+    instructions = output(capsys)["data"]
+    assert instructions["practice_id"] == "practice"
+    assert "# Sales roleplay buyer guide" in instructions["instructions"]
+    assert instructions["source"] == str(project / "runs/practice/buyer-guide.md")

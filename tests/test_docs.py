@@ -15,10 +15,15 @@ def test_documentation_is_self_contained_and_complete() -> None:
     assert "--jobs .tommy" not in page
     assert "tommy scorecard create" in page
     assert "tommy template add-objection" in page
+    assert "We are making up the IDs" in page
+    assert "ep-practice" in page and "directory name we chose" in page
+    assert "tommy practice instructions" in page
+    assert "exact guide the sales target will follow" in page
     for command in (
         "tommy init",
         "tommy practice prepare",
         "tommy practice build",
+        "tommy practice instructions",
         "tommy practice preview",
         "tommy practice deploy",
         "tommy attempt fetch",

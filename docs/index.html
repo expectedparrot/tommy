@@ -53,6 +53,8 @@
     <p>Tommy separates three things: the scoring standard, reusable buyer behavior, and facts about this deal. We will construct each explicitly.</p>
 
     <h3>Start a project</h3>
+    <p>The first positional value, <code>ep-practice</code>, is a directory name we chose for this tutorial. Tommy creates that directory and keeps the scenario definitions and practice history together inside it. The longer value passed to <code>--name</code> is a human-readable project name. Neither value comes from Expected Parrot, and you can replace both with names that fit your work.</p>
+    <p>After initialization we change into the new directory. Every later Tommy command discovers the project from the <code>tommy.json</code> marker created there.</p>
     <pre><code class="language-bash">tommy init ep-practice --name "Expected Parrot enterprise practice"
 cd ep-practice</code></pre>
     <details><summary>Show JSON response</summary><pre><code class="language-json">{
@@ -69,7 +71,9 @@ cd ep-practice</code></pre>
 
   <section id="buyer">
     <h2>Define what good looks like</h2>
-    <p>A scorecard is independent of any one buyer. Here we make one group and two criteria. Add more criteria the same way when they matter.</p>
+    <p>A scorecard tells the evaluator what to look for after the call. It is independent of any one buyer, so the same scoring standard can be reused across many practices.</p>
+    <p>We are making up the IDs in this section. <code>enterprise-call</code>, <code>conversation</code>, <code>discovery</code>, and <code>close</code> are short labels we chose so later commands can refer to these objects unambiguously. IDs should be memorable and stable; the accompanying names and descriptions are what people will read.</p>
+    <p>First we create an empty scorecard, then a group that organizes related criteria, and finally two criteria. Each criterion is worth up to two points. Tommy will later give these definitions and the transcript to an evaluator, which must score both criteria and cite the turns supporting its judgment.</p>
     <pre><code class="language-bash">tommy scorecard create --id enterprise-call --name "Enterprise sales call"
 
 tommy scorecard add-group \
@@ -104,7 +108,8 @@ tommy scorecard add-criterion \
 }</code></pre></details>
 
     <h2>Construct the reusable voice buyer</h2>
-    <p>The template says how the simulated buyer behaves. It does not claim that Jordan will actually behave this way. The default mode is voice; we state it here because it is central to this practice.</p>
+    <p>A template controls the simulated side of the conversation: who the buyer is, how resistant they should be, how the call begins, and what the seller must earn. It points to <code>enterprise-call</code>, so attempts made from this template will be evaluated with the scorecard we just defined.</p>
+    <p>Here <code>skeptical-research-leader</code> is another ID we chose. <code>--mode voice</code> tells Expected Parrot to present a spoken interview experience. <code>--opening mid_conversation</code> avoids spending the practice on introductions, while <code>tough_but_winnable</code> tells the AI not to concede too easily. These settings describe a useful rehearsal; they do not claim that the real Jordan will behave this way.</p>
     <pre><code class="language-bash">tommy template create \
   --id skeptical-research-leader \
   --name "Skeptical research leader" \
@@ -132,7 +137,7 @@ tommy scorecard add-criterion \
   "warnings": [], "errors": [], "next_steps": []
 }</code></pre></details>
 
-    <p>Now give that buyer objection territory. The prompt tells the AI what concern to raise; the optional follow-up prevents a superficial answer from resolving it.</p>
+    <p>The template starts with no objections. We add two now. Their names are labels for humans; each prompt is an instruction to the AI buyer about a concern it may raise. The optional follow-up gives the buyer a way to probe past a superficial answer. These are territories rather than a rigid script, so the conversation can still respond naturally to what Alex says.</p>
     <pre><code class="language-bash">tommy template add-objection \
   --template skeptical-research-leader \
   --name "Validity" \
@@ -150,7 +155,8 @@ tommy template add-objection \
 }</code></pre></details>
 
     <h2>Add only the known deal facts</h2>
-    <p>The deal is the actual opportunity context supplied to Tommy. Keeping it separate means a useful reusable persona does not silently become CRM history.</p>
+    <p>The template is reusable behavior; the deal supplies facts about this particular opportunity. Here <code>acme-research</code> is our chosen deal ID. The seller, offering, price, prospect, stage, objective, and history become context the AI buyer may rely on. Keeping them separate means the reusable persona does not silently become CRM history, and it makes clear which details were actually supplied.</p>
+    <p>The known budget objection belongs to this deal because it is something we know about Acme. The more general way of pressing on budget belongs to the template because it is useful behavior for similar practices.</p>
     <pre><code class="language-bash">tommy deal create \
   --id acme-research \
   --name "Acme research platform evaluation" \
@@ -182,7 +188,8 @@ tommy deal add-objection \
 
   <section id="launch">
     <h2>Prepare, inspect, and launch</h2>
-    <p>Preparing freezes the selected template, deal, scorecard, and settings into a versioned practice. Building exports the buyer guide, manifest, and native EDSL survey to a named directory under the current working directory. Expected Parrot never needs to read Tommy’s private <code>.tommy</code> state.</p>
+    <p>A practice combines the reusable template with this deal. We choose <code>jordan-pricing</code> as its ID. Preparing records hashes of the selected template, deal, and scorecard; if one changes afterward, Tommy refuses to build the stale practice and asks us to prepare a new one.</p>
+    <p>Building turns those components into the actual instructions for the AI buyer and a native EDSL survey. We choose <code>runs/jordan-pricing</code> as the visible output directory. Expected Parrot never needs to read Tommy’s private <code>.tommy</code> state.</p>
     <pre><code class="language-bash">tommy practice prepare \
   --template skeptical-research-leader \
   --deal acme-research \
@@ -202,7 +209,22 @@ tommy practice build \
   }
 }</code></pre></details>
 
-    <p>Preview is read-only. It lets you verify the voice experience before creating a live respondent study.</p>
+    <h3>Read the generated buyer instructions</h3>
+    <p>Before previewing or deploying, inspect the exact guide the sales target will follow. This is the combined result of the buyer template, the Acme deal facts, and the practice settings—not another hidden model call. Tommy prints the guide and also reports the exported Markdown file that contains it.</p>
+    <pre><code class="language-bash">tommy practice instructions --practice jordan-pricing</code></pre>
+    <details><summary>Show generated instructions</summary><pre><code class="language-json">{
+  "status": "ok",
+  "command": "tommy practice instructions",
+  "data": {
+    "practice_id": "jordan-pricing",
+    "source": "/work/ep-practice/runs/jordan-pricing/buyer-guide.md",
+    "instructions": "# Sales roleplay buyer guide\n\n## Character\n\nYou are **Jordan Chen**, Head of UX Research. Direct and skeptical, but candid when the seller asks specific questions.\n\n## Conversation design\n\n- Call type: Pricing follow-up\n- Opening: mid_conversation\n- Difficulty: tough_but_winnable\n- Target length: about 12 minutes\n..."
+  }
+}</code></pre></details>
+
+    <p>Read this output as the buyer’s operating brief. It includes the supplied deal context, objection territory, success condition, and guardrails against inventing facts. If it is wrong, update the underlying template or deal and prepare a new practice rather than editing the generated guide by hand.</p>
+
+    <p>Preview is read-only. Tommy sends the same generated instructions into an Expected Parrot Interviewer preview so you can verify the voice experience before creating a live respondent study.</p>
     <pre><code class="language-bash">tommy practice preview --practice jordan-pricing</code></pre>
     <details><summary>Show JSON response</summary><pre><code class="language-json">{
   "status": "ok",
@@ -210,7 +232,7 @@ tommy practice build \
   "data": {"practice_id": "jordan-pricing", "preview_url": "https://…", "external_state_created": false}
 }</code></pre></details>
 
-    <p class="note">Deployment creates a private Expected Parrot respondent study. Run it only after the preview is acceptable.</p>
+    <p class="note">Deployment creates a private Expected Parrot respondent study backed by those instructions. The returned respondent URL is what Alex opens to speak with the AI buyer. Run it only after the guide and preview are acceptable.</p>
     <pre><code class="language-bash">tommy practice deploy --practice jordan-pricing --confirm</code></pre>
     <details><summary>Show JSON response</summary><pre><code class="language-json">{
   "status": "ok",
