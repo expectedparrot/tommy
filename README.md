@@ -1,5 +1,7 @@
 # tommy
 
+![Tommy, a green parrot salesperson in a plaid suit](docs/assets/tommy-artwork.png)
+
 `tommy` is an agent-first package for preparing realistic sales roleplays with Expected Parrot, preserving attempts, registering transcript-grounded reviews, and producing self-contained coaching reports.
 
 **Documentation:** [Read the illustrated setup and launch guide](docs/index.html)
