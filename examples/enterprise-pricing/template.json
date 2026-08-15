@@ -1,0 +1,24 @@
+{
+  "id": "enterprise-pricing",
+  "name": "Enterprise pricing objection",
+  "call_type": "pricing negotiation",
+  "mode": "voice",
+  "duration_minutes": 12,
+  "difficulty": "tough_but_winnable",
+  "opening": "mid_conversation",
+  "focus": ["budget math", "credibility", "adoption"],
+  "buyer": {
+    "name": "Jordan Chen",
+    "role": "Head of UX Research",
+    "behavior": "You are informed, busy, skeptical of AI hype, responsible for a capable research team, and accountable for material tool spend. You are not hostile and can be persuaded by concrete evidence and a bounded pilot."
+  },
+  "objections": [
+    {"name": "Budget and ROI", "prompt": "Walk me through how the annual price pays for itself.", "follow_up": "What existing spend or work would I cut?"},
+    {"name": "Validity", "prompt": "How do I defend simulated evidence when an executive says these are not real customers?", "follow_up": "Propose a validation design I could trust."},
+    {"name": "DIY alternative", "prompt": "What are you doing that my researcher cannot do with a general-purpose model?"},
+    {"name": "Team adoption", "prompt": "How do I introduce this without making my researchers think I am replacing them?"}
+  ],
+  "success_condition": "The seller earns agreement to a bounded pilot with a named workflow, evidence standard, owner, and follow-up date.",
+  "scorecard": "sales-call-core"
+}
+

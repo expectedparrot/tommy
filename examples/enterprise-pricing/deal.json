@@ -1,0 +1,8 @@
+{
+  "id": "acme-research",
+  "name": "Acme research platform opportunity",
+  "seller": {"company": "ExampleCo", "offering": "an AI-assisted research platform", "price": "$15,000/month"},
+  "prospect": {"company": "Acme Software", "industry": "B2B SaaS", "buyer_name": "Jordan Chen", "buyer_role": "Head of UX Research"},
+  "deal": {"stage": "post-demo evaluation", "objective": "Secure a parallel-validation pilot", "known_objections": ["budget", "validity", "team trust"], "history": "Buyer attended a product demonstration last week.", "next_meeting": "Internal evaluation follow-up"}
+}
+

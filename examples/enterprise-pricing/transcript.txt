@@ -1,0 +1,14 @@
+Jordan Chen: I have a couple of questions before I take this any further internally. Walk me through how fifteen thousand dollars a month pays for itself.
+
+Alex Rivera: It helps teams make better decisions much faster.
+
+Jordan Chen: That is still a principle, not budget math. What changes for my six-person team next quarter?
+
+Alex Rivera: Fair pushback. Which part of your current research queue causes the most delay or outside spend?
+
+Jordan Chen: Early concept tests. We have a three-week queue, but those studies are not worth a hundred and eighty thousand dollars a year.
+
+Alex Rivera: Then I would not justify the contract on concept tests alone. I would suggest a two-week parallel pilot on one upcoming concept test. We agree on comparison criteria before starting, run simulated and real-user work side by side, and meet the following Friday to decide whether the result is credible enough to continue.
+
+Jordan Chen: That is more concrete. Send me the pilot design and the evidence criteria; I will review it with my VP next Tuesday.
+

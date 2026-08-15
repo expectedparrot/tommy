@@ -1,0 +1,23 @@
+{
+  "id": "sales-call-core",
+  "name": "Core sales conversation",
+  "groups": [
+    {
+      "id": "opening-discovery",
+      "name": "Opening & discovery",
+      "criteria": [
+        {"id": "opening", "name": "Purposeful opening", "description": "Establishes relevance and earns attention without a vague or unsupported pitch.", "max_score": 2},
+        {"id": "discovery", "name": "Discovery", "description": "Asks useful questions and adapts to what the buyer says.", "max_score": 3}
+      ]
+    },
+    {
+      "id": "value-close",
+      "name": "Value & close",
+      "criteria": [
+        {"id": "objection", "name": "Objection handling", "description": "Addresses the buyer's underlying concern with a specific and credible response.", "max_score": 3},
+        {"id": "close", "name": "Concrete next step", "description": "Earns a specific mutual next step with ownership and timing.", "max_score": 2}
+      ]
+    }
+  ]
+}
+

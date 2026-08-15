@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+ROOT = Path(__file__).parents[1]
+
+
+def test_documentation_is_self_contained_and_complete() -> None:
+    page = (ROOT / "docs/index.html").read_text(encoding="utf-8")
+    assert (ROOT / "docs/assets/tommy-artwork.png").exists()
+    assert 'src="assets/tommy-artwork.png"' in page
+    for command in (
+        "tommy init",
+        "tommy practice prepare",
+        "tommy practice build",
+        "tommy practice preview",
+        "tommy practice deploy",
+        "tommy attempt import",
+        "tommy review register",
+        "tommy report",
+    ):
+        assert command in page
+    assert "https://" not in page
+    assert "http://" not in page
+

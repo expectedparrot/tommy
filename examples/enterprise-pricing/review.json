@@ -1,0 +1,24 @@
+{
+  "outcome": "The seller recovered from a vague opening and earned a concrete request for a parallel-validation pilot design.",
+  "recommendations": [
+    "Lead with the buyer's operational constraint instead of the abstract promise of better decisions.",
+    "Quantify the value of reducing the concept-test queue before discussing contract-wide ROI.",
+    "Confirm who owns the Tuesday review and schedule the follow-up rather than leaving timing implicit."
+  ],
+  "strengths": [
+    "Asked a focused discovery question after the buyer rejected the first answer.",
+    "Avoided defending the full contract with an unsupported claim.",
+    "Proposed a bounded parallel test with advance evidence criteria."
+  ],
+  "criteria": [
+    {"criterion_id": "opening", "score": 1, "explanation": "The initial value statement was relevant but too abstract to earn confidence.", "evidence": [{"turn_id": "turn-002", "label": "Vague opening"}], "better_response": "You mentioned a three-week concept-test queue. Could we start by quantifying what that delays?", "confidence": "high"},
+    {"criterion_id": "discovery", "score": 3, "explanation": "The seller responded to pushback with one useful question that exposed the concrete workflow bottleneck.", "evidence": [{"turn_id": "turn-004", "label": "Focused discovery"}], "better_response": "The question was effective; a follow-up about volume and cost would improve the ROI calculation.", "confidence": "high"},
+    {"criterion_id": "objection", "score": 3, "explanation": "The seller acknowledged the limit of the ROI claim and reduced validity risk through a parallel pilot.", "evidence": [{"turn_id": "turn-006", "label": "Bounded pilot"}], "better_response": "Add explicit quantitative success thresholds and name what happens if simulated and human results diverge.", "confidence": "high"},
+    {"criterion_id": "close", "score": 1, "explanation": "The buyer requested concrete materials and named an internal meeting, but the seller did not secure ownership or a follow-up appointment.", "evidence": [{"turn_id": "turn-007", "label": "Buyer next step"}], "better_response": "I will send the one-page design tomorrow. Can we hold Wednesday at 2 PM to discuss your VP's reaction?", "confidence": "high"}
+  ],
+  "objections": [
+    {"category": "Budget and ROI", "buyer_concern": "The annual price was not connected to measurable operational value.", "resolved": false, "assessment": "The seller narrowed the problem and earned a pilot, but did not establish contract-level ROI.", "evidence": [{"turn_id": "turn-001", "label": "ROI demand"}, {"turn_id": "turn-005", "label": "Annual-price challenge"}], "better_response": "Quantify queue volume, cycle-time reduction, avoided recruiting spend, and which existing tools or work could be consolidated."},
+    {"category": "Validity", "buyer_concern": "The buyer needs evidence that simulated results can be trusted.", "resolved": true, "assessment": "A parallel-validation pilot directly addressed the risk without asking the buyer to trust a general claim.", "evidence": [{"turn_id": "turn-006", "label": "Parallel validation"}], "better_response": "Pre-register agreement measures and decision thresholds before the pilot begins."}
+  ]
+}
+
