@@ -4,7 +4,7 @@
 
 `tommy` is an agent-first package for preparing realistic sales roleplays with Expected Parrot, preserving attempts, registering transcript-grounded reviews, and producing self-contained coaching reports.
 
-**Documentation:** [Read the illustrated setup and launch guide](docs/index.html)
+**Documentation:** [Read the illustrated setup and launch guide](https://expectedparrot.github.io/tommy/)
 
 The product model is:
 

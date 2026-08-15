@@ -22,5 +22,5 @@ def test_documentation_is_self_contained_and_complete() -> None:
         "tommy compare",
     ):
         assert command in page
-    assert "https://" not in page
     assert "http://" not in page
+    assert "https://github.com/expectedparrot/tommy#copyable-agent-instructions" in page

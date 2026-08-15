@@ -18,6 +18,12 @@ dev = ["pytest>=8", "ruff>=0.6"]
 [project.scripts]
 tommy = "tommy.cli:main"
 
+[project.urls]
+Homepage = "https://expectedparrot.github.io/tommy/"
+Documentation = "https://expectedparrot.github.io/tommy/"
+Repository = "https://github.com/expectedparrot/tommy"
+Issues = "https://github.com/expectedparrot/tommy/issues"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/tommy"]
 
@@ -26,4 +32,3 @@ pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 110
-
